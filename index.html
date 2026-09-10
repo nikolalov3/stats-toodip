@@ -63,6 +63,18 @@
   .brow b{font-size:13.5px;text-align:right;font-variant-numeric:tabular-nums}
   .empty{color:var(--dim);font-size:13px;padding:6px 0}
   .pill{display:inline-block;font-size:11px;color:var(--soft);border:1px solid var(--line);border-radius:999px;padding:2px 9px;margin-left:8px}
+
+  /* widocznosc w AI (gorny lejek) */
+  h3{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--soft);margin:0 0 12px;font-weight:600}
+  .vplat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .vp{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .vp .pn{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.08em}
+  .vp .pv{font-size:24px;font-weight:800;margin-top:5px;letter-spacing:-.01em}
+  .vp .pr{font-size:12px;color:var(--soft);margin-top:3px;font-variant-numeric:tabular-nums}
+  .brow.self .bl{color:var(--ai);font-weight:700}
+  .flag{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:3px 11px}
+  .flag.no{color:var(--red);border:1px solid rgba(255,106,106,.35)}
+  .flag.yes{color:var(--ai);border:1px solid rgba(127,206,79,.4)}
 </style>
 </head>
 <body>
@@ -117,6 +129,16 @@
         <h2>Ostatnie 14 dni</h2>
         <div class="trend" id="trend"></div>
         <div class="legend"><span><i style="background:var(--ai)"></i>z AI</span><span><i style="background:var(--rest)"></i>reszta</span></div>
+      </div>
+
+      <div class="card hidden" id="visCard">
+        <h2>Widoczność w AI — czy Cię poleca <span class="pill">górny lejek</span></h2>
+        <div class="vplat" id="visPlatforms"></div>
+        <div style="margin:16px 0 4px"><span class="muted">Twoja strona cytowana przez AI:</span> <span id="visSite"></span></div>
+        <div class="two" style="margin-top:14px">
+          <div><h3>Kto wygrywa Twoją kategorię</h3><div id="visRanking"></div></div>
+          <div><h3>Cytowane źródła <span class="pill">kto posiada temat</span></h3><div id="visSources"></div></div>
+        </div>
       </div>
 
       <div class="two">
@@ -242,12 +264,55 @@ function group(rows, keyFn) {
   return Object.keys(m).map(function (k) { return { k: k, v: m[k] }; }).sort(function (a, b) { return b.v - a.v; });
 }
 
+var PLAT = { chatgpt: 'ChatGPT', 'google-ai': 'Google AI', perplexity: 'Perplexity', gemini: 'Gemini' };
+function renderVis(rows) {
+  if (!rows.length) { show('visCard', false); return; }
+  show('visCard', true);
+
+  // najnowszy pomiar per platforma (rows juz posortowane malejaco po dacie)
+  var latest = {};
+  rows.forEach(function (r) { if (!latest[r.platform]) latest[r.platform] = r; });
+  var plats = Object.keys(latest);
+
+  $('visPlatforms').innerHTML = plats.map(function (p) {
+    var r = latest[p];
+    var pres = r.presence_pct != null ? r.presence_pct + '%' : '—';
+    var rank = r.rank ? '#' + r.rank + (r.competitors ? '/' + r.competitors : '') : 'poza rankingiem';
+    return '<div class="vp"><div class="pn">' + esc(PLAT[p] || p) + '</div><div class="pv">' + pres + '</div>' +
+      '<div class="pr">' + rank + ' · ' + (r.hits || 0) + '/' + (r.questions || 0) + ' pytań · ' + esc(r.measured_on) + '</div></div>';
+  }).join('');
+
+  var citedIn = plats.filter(function (p) { return latest[p].own_site_cited === true; }).map(function (p) { return PLAT[p] || p; });
+  var anyKnown = plats.some(function (p) { return latest[p].own_site_cited != null; });
+  $('visSite').innerHTML = citedIn.length ? '<span class="flag yes">tak — ' + esc(citedIn.join(', ')) + '</span>'
+    : (anyKnown ? '<span class="flag no">jeszcze nie</span>' : '<span class="muted">—</span>');
+
+  // ranking + zrodla z najnowszego pomiaru (rows[0])
+  var top = rows[0];
+  var rk = (top.ranking || []).slice(0, 8);
+  var rmax = Math.max.apply(null, rk.map(function (x) { return x[1]; }).concat([1]));
+  $('visRanking').innerHTML = rk.length ? rk.map(function (x, i) {
+    var self = (i + 1) === top.rank;
+    return '<div class="brow ' + (self ? 'self' : 'rest') + '"><span class="bl">' + (i + 1) + '. ' + esc(x[0]) + '</span>' +
+      '<span class="bt"><i style="width:' + Math.round(x[1] / rmax * 100) + '%"></i></span><b>' + x[1] + '</b></div>';
+  }).join('') : '<div class="empty">Brak rankingu.</div>';
+
+  var sr = (top.sources || []).slice(0, 8);
+  var smax = Math.max.apply(null, sr.map(function (x) { return x[1]; }).concat([1]));
+  $('visSources').innerHTML = sr.length ? sr.map(function (x) {
+    return '<div class="brow rest"><span class="bl">' + esc(x[0]) + '</span>' +
+      '<span class="bt"><i style="width:' + Math.round(x[1] / smax * 100) + '%"></i></span><b>' + x[1] + '</b></div>';
+  }).join('') : '<div class="empty">Brak danych o źródłach.</div>';
+}
+
 async function loadStats(id) {
   var since = new Date(Date.now() - 30 * 864e5).toISOString();
   var ev = await sb.from('stats_events').select('ts,path,title,source,ai_name,type,name,visitor').eq('website_id', id).gte('ts', since).order('ts').limit(8000);
   var all = ev.data || [];
   var bt = await sb.from('stats_bot_hits').select('ts,bot,path').eq('website_id', id).gte('ts', since).order('ts', { ascending: false }).limit(2000);
   var botRows = bt.data || [];
+  var ms = await sb.from('stats_measurements').select('platform,measured_on,presence_pct,hits,questions,rank,competitors,own_site_cited,ranking,sources,note').eq('website_id', id).order('measured_on', { ascending: false }).limit(50);
+  renderVis(ms.data || []);
 
   // pageview vs zdarzenie (stare wiersze maja type=null -> traktujemy jak pageview)
   var rows = all.filter(function (r) { return r.type !== 'event'; });
