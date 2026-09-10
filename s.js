@@ -7,7 +7,10 @@
   var id = el && el.getAttribute('data-id');
   if (!id) return;
 
-  var host = (el.getAttribute('data-host') || 'https://stats.toodip.pl').replace(/\/+$/, '');
+  /* host = skad zaladowano ten skrypt (dziala na dowolnej domenie, .pl/.com/…) */
+  var host = el.getAttribute('data-host');
+  if (!host && el.src) { try { host = new URL(el.src).origin; } catch (e) {} }
+  host = (host || 'https://stats.toodip.pl').replace(/\/+$/, '');
   var endpoint = host + '/api/collect';
 
   function hit() {
