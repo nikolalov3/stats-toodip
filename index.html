@@ -107,10 +107,10 @@
 
     <div id="statsWrap" class="hidden">
       <div class="kpis">
-        <div class="kpi"><div class="n" id="kVisits">0</div><div class="l">Wejścia · 30 dni</div></div>
-        <div class="kpi hi"><div class="n" id="kAi">0</div><div class="l">Z AI · 30 dni</div></div>
-        <div class="kpi hi"><div class="n" id="kPct">0%</div><div class="l">Udział AI</div></div>
-        <div class="kpi"><div class="n" id="kToday">0</div><div class="l">Dziś</div></div>
+        <div class="kpi"><div class="n" id="kVisits">0</div><div class="l">Odsłony · 30 dni</div></div>
+        <div class="kpi"><div class="n" id="kUniq">0</div><div class="l">Unikalni · 30 dni</div></div>
+        <div class="kpi hi"><div class="n" id="kAi">0</div><div class="l">Z AI · <span id="kPct">0%</span></div></div>
+        <div class="kpi hi"><div class="n" id="kConv">0</div><div class="l">Konwersje · 30 dni</div></div>
       </div>
 
       <div class="card">
@@ -132,13 +132,18 @@
 
       <div class="two">
         <div class="card">
+          <h2>Konwersje <span class="pill">co robi ruch</span></h2>
+          <div id="conv"></div>
+        </div>
+        <div class="card">
           <h2>Najczęstsze strony</h2>
           <div id="pages"></div>
         </div>
-        <div class="card">
-          <h2>Boty AI <span class="pill">czy AI czyta stronę</span></h2>
-          <div id="bots"></div>
-        </div>
+      </div>
+
+      <div class="card">
+        <h2>Boty AI <span class="pill">czy AI czyta stronę</span></h2>
+        <div id="bots"></div>
       </div>
 
       <div class="card">
@@ -239,26 +244,31 @@ function group(rows, keyFn) {
 
 async function loadStats(id) {
   var since = new Date(Date.now() - 30 * 864e5).toISOString();
-  var ev = await sb.from('stats_events').select('ts,path,title,source,ai_name').eq('website_id', id).gte('ts', since).order('ts').limit(5000);
-  var rows = ev.data || [];
-  var cnt = await sb.from('stats_events').select('id', { count: 'exact', head: true }).eq('website_id', id);
+  var ev = await sb.from('stats_events').select('ts,path,title,source,ai_name,type,name,visitor').eq('website_id', id).gte('ts', since).order('ts').limit(8000);
+  var all = ev.data || [];
   var bt = await sb.from('stats_bot_hits').select('ts,bot,path').eq('website_id', id).gte('ts', since).order('ts', { ascending: false }).limit(2000);
   var botRows = bt.data || [];
 
-  var now = new Date(), startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  var ai30 = 0, today = 0;
-  var days = {}; for (var i = 13; i >= 0; i--) { days[new Date(now - i * 864e5).toISOString().slice(0, 10)] = { t: 0, a: 0 }; }
+  // pageview vs zdarzenie (stare wiersze maja type=null -> traktujemy jak pageview)
+  var rows = all.filter(function (r) { return r.type !== 'event'; });
+  var events = all.filter(function (r) { return r.type === 'event'; });
+
+  var ai30 = 0, uniq = {};
+  var days = {}; for (var i = 13; i >= 0; i--) { days[new Date(Date.now() - i * 864e5).toISOString().slice(0, 10)] = { t: 0, a: 0 }; }
   rows.forEach(function (r) {
-    var t = new Date(r.ts).getTime(); var isAi = r.source === 'ai';
-    if (isAi) ai30++; if (t >= startToday) today++;
+    var isAi = r.source === 'ai';
+    if (isAi) ai30++;
+    if (r.visitor) uniq[r.visitor] = 1;
     var key = r.ts.slice(0, 10); if (key in days) { days[key].t++; if (isAi) days[key].a++; }
   });
+  var uniqN = Object.keys(uniq).length;
 
   $('kVisits').textContent = rows.length;
+  $('kUniq').textContent = uniqN;
   $('kAi').textContent = ai30;
   $('kPct').textContent = (rows.length ? Math.round(ai30 / rows.length * 100) : 0) + '%';
-  $('kToday').textContent = today;
-  $('siteMeta').textContent = (currentSite.domain ? currentSite.domain + ' · ' : '') + 'łącznie ' + (cnt.count || 0) + ' wejść';
+  $('kConv').textContent = events.length;
+  $('siteMeta').textContent = (currentSite.domain ? currentSite.domain + ' · ' : '') + uniqN + ' unikalnych / ' + rows.length + ' odsłon (30 dni)';
 
   // trend (stacked: AI + reszta)
   var dvals = Object.keys(days).map(function (k) { return days[k].t; });
@@ -277,6 +287,12 @@ async function loadStats(id) {
   var srcName = { ai: 'AI', search: 'Wyszukiwarki', social: 'Social', direct: 'Bezpośrednie', other: 'Inne' };
   var srcItems = group(rows, function (r) { return srcName[r.source] || 'Bezpośrednie'; });
   bars('srcBreak', srcItems, { pct: true, empty: 'Brak danych.' });
+
+  // konwersje (zdarzenia-pieniadze po nazwie)
+  var convName = { phone: 'Telefon', directions: 'Mapy / dojazd', instagram: 'Instagram', facebook: 'Facebook',
+    email: 'E-mail', whatsapp: 'WhatsApp', rezerwacja: 'Rezerwacja', menu: 'Menu' };
+  bars('conv', group(events, function (r) { return convName[r.name] || (r.name || 'zdarzenie'); }),
+    { empty: 'Brak jeszcze konwersji. Liczymy klik w telefon, mapy, IG i Facebooka.' });
 
   // top strony (path, z tytułem w dymku)
   bars('pages', group(rows, function (r) { return r.path || '/'; }).slice(0, 8), { rest: true, empty: 'Brak danych. Wklej skrypt i wejdź na stronę.' });

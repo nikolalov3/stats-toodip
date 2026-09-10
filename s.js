@@ -1,7 +1,12 @@
-/* toodip stats — lekki licznik wejsc (page views).
+/* toodip stats — lekki licznik wejsc (page views) + zdarzenia-pieniadze (konwersje).
    Wklejasz na strone klienta:
-   <script defer src="https://stats.toodip.pl/s.js" data-id="WEBSITE_ID"></script>
-   (opcjonalnie data-host="..." gdy testujesz na innej domenie) */
+   <script defer src="https://stats.toodip.com/s.js" data-id="WEBSITE_ID"></script>
+   (opcjonalnie data-host="..." gdy testujesz na innej domenie)
+
+   Zdarzenia:
+   - auto: klik w tel:, w mapy/nawigacje, w Instagram, w Facebook
+   - recznie: toodip('rezerwacja')  // lub dowolna nazwa
+   - deklaratywnie: <a data-toodip="rezerwacja" ...>  */
 (function () {
   var el = document.currentScript || document.querySelector('script[data-id]');
   var id = el && el.getAttribute('data-id');
@@ -10,17 +15,19 @@
   /* host = skad zaladowano ten skrypt (dziala na dowolnej domenie, .pl/.com/…) */
   var host = el.getAttribute('data-host');
   if (!host && el.src) { try { host = new URL(el.src).origin; } catch (e) {} }
-  host = (host || 'https://stats.toodip.pl').replace(/\/+$/, '');
+  host = (host || 'https://stats.toodip.com').replace(/\/+$/, '');
   var endpoint = host + '/api/collect';
 
-  function hit() {
-    var body = JSON.stringify({
+  function send(extra) {
+    var payload = {
       id: id,
       p: location.pathname,
       r: document.referrer || '',
       t: (document.title || '').slice(0, 200),
       l: (navigator.language || document.documentElement.lang || '').slice(0, 10)
-    });
+    };
+    if (extra) { for (var k in extra) payload[k] = extra[k]; }
+    var body = JSON.stringify(payload);
     try {
       if (navigator.sendBeacon) {
         navigator.sendBeacon(endpoint, new Blob([body], { type: 'text/plain' }));
@@ -31,6 +38,38 @@
       fetch(endpoint, { method: 'POST', body: body, headers: { 'Content-Type': 'text/plain' }, keepalive: true, mode: 'no-cors' });
     } catch (e) {}
   }
+
+  function hit() { send(); }                          // page view
+  function track(name) {                              // zdarzenie (konwersja)
+    if (!name) return;
+    send({ e: String(name).slice(0, 40) });
+  }
+
+  /* publiczne API: toodip('rezerwacja') */
+  window.toodip = function (name) { track(name); };
+
+  /* auto-wykrywanie zdarzen-pieniedzy z klikow w linki */
+  function nameFor(href, node) {
+    var explicit = node && node.getAttribute && node.getAttribute('data-toodip');
+    if (explicit) return explicit.slice(0, 40);
+    if (!href) return null;
+    var h = href.toLowerCase();
+    if (h.indexOf('tel:') === 0) return 'phone';
+    if (h.indexOf('mailto:') === 0) return 'email';
+    if (h.indexOf('sms:') === 0 || h.indexOf('whatsapp') >= 0 || h.indexOf('wa.me') >= 0) return 'whatsapp';
+    if (h.indexOf('geo:') === 0 || /maps\.google|google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl\/maps/.test(h)) return 'directions';
+    if (/(^|\.)instagram\.com/.test(h) || h.indexOf('instagr.am') >= 0) return 'instagram';
+    if (/(^|\.)facebook\.com/.test(h) || h.indexOf('fb.com') >= 0 || h.indexOf('fb.me') >= 0) return 'facebook';
+    return null;
+  }
+
+  document.addEventListener('click', function (ev) {
+    var node = ev.target;
+    while (node && node.nodeName !== 'A') node = node.parentNode;
+    if (!node || node.nodeName !== 'A') return;
+    var name = nameFor(node.getAttribute('href') || '', node);
+    if (name) track(name);
+  }, true);
 
   hit();
 

@@ -29,6 +29,9 @@ alter table public.stats_events add column if not exists ai_name text;   -- Chat
 alter table public.stats_events add column if not exists title   text;
 alter table public.stats_events add column if not exists device  text;   -- mobile / desktop
 alter table public.stats_events add column if not exists lang    text;
+alter table public.stats_events add column if not exists type    text;   -- 'pageview' | 'event'
+alter table public.stats_events add column if not exists name    text;   -- nazwa zdarzenia: phone / directions / instagram / ...
+alter table public.stats_events add column if not exists visitor text;   -- cookieless dzienny hash (unikalni, bez PII)
 alter table public.stats_events enable row level security;
 drop policy if exists "stats_events read own" on public.stats_events;
 create policy "stats_events read own" on public.stats_events

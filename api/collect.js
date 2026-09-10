@@ -1,6 +1,9 @@
-/* Vercel serverless: odbiera wejscie (page view) i zapisuje do Supabase.
+/* Vercel serverless: odbiera wejscie (page view) lub zdarzenie-pieniadz i zapisuje do Supabase.
    Klasyfikuje zrodlo ruchu (AI / wyszukiwarka / social / direct) po referrerze.
-   Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY */
+   Unikalni: cookieless dzienny hash (IP+UA+dzien+strona) — nieodwracalny, bez PII.
+   Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, (opc.) STATS_SALT */
+
+import crypto from 'crypto';
 
 var AI = {
   'chatgpt.com': 'ChatGPT', 'chat.openai.com': 'ChatGPT',
@@ -46,8 +49,17 @@ export default async function handler(req, res) {
   var params = {};
   try { new URL('http://x' + path).searchParams.forEach(function (v, k) { params[k] = v; }); } catch (e) {}
 
-  var cls = classify(data.r, params);
   var ua = req.headers['user-agent'] || '';
+  var isEvent = !!data.e;
+  var cls = isEvent ? { source: null, ai: null } : classify(data.r, params);
+
+  /* cookieless dzienny odcisk: IP + UA + dzien + strona -> hash (bez zapisu IP) */
+  var ip = String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '').split(',')[0].trim();
+  var day = new Date().toISOString().slice(0, 10);
+  var salt = process.env.STATS_SALT || 'toodip';
+  var visitor = crypto.createHash('sha256')
+    .update(String(data.id) + '|' + day + '|' + ip + '|' + ua + '|' + salt)
+    .digest('hex').slice(0, 24);
 
   var row = {
     website_id: String(data.id),
@@ -57,6 +69,9 @@ export default async function handler(req, res) {
     lang: data.l ? String(data.l).slice(0, 10) : null,
     source: cls.source,
     ai_name: cls.ai,
+    type: isEvent ? 'event' : 'pageview',
+    name: isEvent ? String(data.e).slice(0, 40) : null,
+    visitor: visitor,
     device: /Mobi|Android|iPhone|iPad|iPod/.test(ua) ? 'mobile' : 'desktop',
     country: req.headers['x-vercel-ip-country'] || null
   };
