@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>toodip stats</title>
+<style>
+  :root{ --bg:#0f1115; --panel:#161a21; --line:#252b36; --ink:#e7ecf3; --soft:#8b94a3; --acc:#7fce4f; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif}
+  a{color:var(--acc)}
+  .wrap{max-width:840px;margin:0 auto;padding:28px 20px 80px}
+  .brand{display:flex;align-items:baseline;gap:10px;margin-bottom:28px}
+  .brand b{font-size:20px;letter-spacing:.02em}
+  .brand span{color:var(--soft);font-size:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin:0 0 16px}
+  h1{font-size:19px;margin:0 0 4px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--soft);margin:0 0 14px;font-weight:600}
+  p.sub{color:var(--soft);margin:0 0 16px}
+  label{display:block;font-size:12px;color:var(--soft);margin:0 0 6px}
+  input{width:100%;background:#0c0e12;border:1px solid var(--line);border-radius:9px;color:var(--ink);padding:11px 12px;font-size:15px}
+  button{background:var(--acc);color:#0d1206;border:0;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:600;cursor:pointer}
+  button.ghost{background:transparent;color:var(--soft);border:1px solid var(--line);font-weight:500}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .stat{background:#0c0e12;border:1px solid var(--line);border-radius:11px;padding:14px}
+  .stat .n{font-size:26px;font-weight:700}
+  .stat .l{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+  .bars{display:flex;align-items:flex-end;gap:4px;height:90px;margin-top:6px}
+  .bars .b{flex:1;background:var(--acc);opacity:.85;border-radius:3px 3px 0 0;min-height:2px}
+  .paths li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);list-style:none;font-size:14px}
+  .paths{margin:0;padding:0}
+  code,.snippet{font-family:ui-monospace,Menlo,monospace;font-size:13px}
+  .snippet{display:block;background:#0c0e12;border:1px solid var(--line);border-radius:9px;padding:12px;white-space:pre-wrap;word-break:break-all;color:#cfe6b8}
+  .muted{color:var(--soft);font-size:13px}
+  .hidden{display:none}
+  .err{color:#ff7a7a;font-size:13px;margin-top:8px}
+  .ok{color:var(--acc);font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><b>toodip<span style="color:var(--acc)">·</span>stats</b><span>pomiar wejść</span></div>
+
+  <!-- LOGIN -->
+  <section id="login" class="card hidden">
+    <h1>Zaloguj się</h1>
+    <p class="sub">Wpisz maila, wyślemy link do logowania.</p>
+    <label>E-mail</label>
+    <input id="email" type="email" placeholder="ty@toodip.pl" autocomplete="email">
+    <div class="row" style="margin-top:12px"><button id="sendLink">Wyślij link</button></div>
+    <div id="loginMsg"></div>
+  </section>
+
+  <!-- APP -->
+  <section id="app" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div><h1 id="siteName">—</h1><div class="muted" id="siteDomain"></div></div>
+        <button class="ghost" id="logout">Wyloguj</button>
+      </div>
+    </div>
+
+    <!-- create site (jeśli user nie ma jeszcze żadnej) -->
+    <div id="createCard" class="card hidden">
+      <h2>Dodaj stronę</h2>
+      <p class="sub">Darmowy plan: 1 strona na konto.</p>
+      <label>Nazwa</label>
+      <input id="cName" placeholder="Café Belmont">
+      <label style="margin-top:12px">Domena (opcjonalnie)</label>
+      <input id="cDomain" placeholder="belmont.cafe">
+      <div class="row" style="margin-top:12px"><button id="createBtn">Utwórz i dostań skrypt</button></div>
+      <div id="createMsg"></div>
+    </div>
+
+    <!-- stats -->
+    <div id="statsWrap" class="hidden">
+      <div class="card">
+        <h2>Wejścia</h2>
+        <div class="stats">
+          <div class="stat"><div class="n" id="nToday">0</div><div class="l">Dziś</div></div>
+          <div class="stat"><div class="n" id="n7">0</div><div class="l">7 dni</div></div>
+          <div class="stat"><div class="n" id="n30">0</div><div class="l">30 dni</div></div>
+          <div class="stat"><div class="n" id="nTotal">0</div><div class="l">Łącznie</div></div>
+        </div>
+        <h2 style="margin-top:20px">Ostatnie 14 dni</h2>
+        <div class="bars" id="bars"></div>
+      </div>
+      <div class="card">
+        <h2>Najczęstsze strony</h2>
+        <ul class="paths" id="paths"></ul>
+      </div>
+      <div class="card">
+        <h2>Skrypt do wklejenia</h2>
+        <p class="sub">Wklej tuż przed &lt;/head&gt; na stronie klienta.</p>
+        <code class="snippet" id="snippet"></code>
+        <div class="row" style="margin-top:10px"><button class="ghost" id="copyBtn">Kopiuj</button></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+/* ====== KONFIG — wklej z Supabase (Settings -> API). Anon key jest publiczny, RLS chroni dane. ====== */
+var CONFIG = {
+  url:  'WKLEJ_SUPABASE_URL',        // np. https://xxxx.supabase.co
+  anon: 'WKLEJ_SUPABASE_ANON_KEY'
+};
+/* =================================================================================================== */
+
+var $ = function (id) { return document.getElementById(id); };
+var show = function (id, on) { $(id).classList.toggle('hidden', !on); };
+var sb = null;
+try { if (String(CONFIG.url).slice(0, 4) === 'http') sb = window.supabase.createClient(CONFIG.url, CONFIG.anon); } catch (e) {}
+var currentSite = null;
+
+async function route() {
+  if (!sb) { show('login', true); show('app', false); $('loginMsg').innerHTML = '<div class="err">Uzupełnij CONFIG (SUPABASE_URL + anon key) w index.html.</div>'; return; }
+  var s = (await sb.auth.getSession()).data.session;
+  show('login', !s);
+  show('app', !!s);
+  if (s) loadApp();
+}
+
+$('sendLink').onclick = async function () {
+  if (!sb) return;
+  var email = $('email').value.trim();
+  $('loginMsg').innerHTML = '';
+  if (!email) return;
+  var r = await sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.origin } });
+  $('loginMsg').innerHTML = r.error
+    ? '<div class="err">' + r.error.message + '</div>'
+    : '<div class="ok">Sprawdź maila i kliknij link.</div>';
+};
+
+$('logout').onclick = async function () { await sb.auth.signOut(); route(); };
+
+async function loadApp() {
+  var w = await sb.from('websites').select('*').order('created_at').limit(1);
+  var sites = w.data || [];
+  if (!sites.length) {
+    currentSite = null;
+    $('siteName').textContent = 'Brak strony';
+    show('createCard', true);
+    show('statsWrap', false);
+    return;
+  }
+  currentSite = sites[0];
+  show('createCard', false);
+  show('statsWrap', true);
+  $('siteName').textContent = currentSite.name;
+  $('siteDomain').textContent = currentSite.domain || '';
+  $('snippet').textContent = '<script defer src="' + location.origin + '/s.js" data-id="' + currentSite.id + '"><\/script>';
+  loadStats(currentSite.id);
+}
+
+$('createBtn').onclick = async function () {
+  var name = $('cName').value.trim();
+  if (!name) return;
+  $('createMsg').innerHTML = '';
+  var r = await sb.from('websites').insert({ name: name, domain: $('cDomain').value.trim() || null }).select();
+  if (r.error) { $('createMsg').innerHTML = '<div class="err">' + r.error.message + '</div>'; return; }
+  loadApp();
+};
+
+$('copyBtn').onclick = function () {
+  navigator.clipboard && navigator.clipboard.writeText($('snippet').textContent);
+  $('copyBtn').textContent = 'Skopiowano';
+  setTimeout(function () { $('copyBtn').textContent = 'Kopiuj'; }, 1500);
+};
+
+async function loadStats(id) {
+  var since = new Date(Date.now() - 30 * 864e5).toISOString();
+  var ev = await sb.from('events').select('ts, path').eq('website_id', id).gte('ts', since).order('ts');
+  var rows = ev.data || [];
+  var cnt = await sb.from('events').select('id', { count: 'exact', head: true }).eq('website_id', id);
+
+  var now = new Date();
+  var startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  var d7 = now.getTime() - 7 * 864e5, d30 = now.getTime() - 30 * 864e5;
+  var today = 0, w7 = 0, w30 = 0, paths = {};
+  var days = {}; // yyyy-mm-dd -> count (14d)
+  for (var i = 13; i >= 0; i--) {
+    var dd = new Date(now.getTime() - i * 864e5);
+    days[dd.toISOString().slice(0, 10)] = 0;
+  }
+  rows.forEach(function (r) {
+    var t = new Date(r.ts).getTime();
+    if (t >= startToday) today++;
+    if (t >= d7) w7++;
+    if (t >= d30) w30++;
+    var key = r.ts.slice(0, 10);
+    if (key in days) days[key]++;
+    var p = r.path || '/';
+    paths[p] = (paths[p] || 0) + 1;
+  });
+
+  $('nToday').textContent = today;
+  $('n7').textContent = w7;
+  $('n30').textContent = w30;
+  $('nTotal').textContent = cnt.count || 0;
+
+  var vals = Object.keys(days).map(function (k) { return days[k]; });
+  var max = Math.max(1, Math.max.apply(null, vals));
+  $('bars').innerHTML = Object.keys(days).map(function (k) {
+    return '<div class="b" title="' + k + ': ' + days[k] + '" style="height:' + Math.round(days[k] / max * 100) + '%"></div>';
+  }).join('');
+
+  var top = Object.keys(paths).sort(function (a, b) { return paths[b] - paths[a]; }).slice(0, 8);
+  $('paths').innerHTML = top.length
+    ? top.map(function (p) { return '<li><span>' + p.replace(/</g, '&lt;') + '</span><b>' + paths[p] + '</b></li>'; }).join('')
+    : '<li class="muted">Brak danych. Wklej skrypt i wejdź na stronę.</li>';
+}
+
+if (sb) sb.auth.onAuthStateChange(function () { route(); });
+route();
+</script>
+</body>
+</html>
