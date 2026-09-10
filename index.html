@@ -45,10 +45,16 @@
   <!-- LOGIN -->
   <section id="login" class="card hidden">
     <h1>Zaloguj się</h1>
-    <p class="sub">Wpisz maila, wyślemy link do logowania.</p>
+    <p class="sub">E-mail i hasło. Pierwszy raz? Kliknij „Utwórz konto".</p>
     <label>E-mail</label>
     <input id="email" type="email" placeholder="ty@toodip.pl" autocomplete="email">
-    <div class="row" style="margin-top:12px"><button id="sendLink">Wyślij link</button></div>
+    <label style="margin-top:12px">Hasło</label>
+    <input id="pass" type="password" placeholder="min. 6 znaków" autocomplete="current-password">
+    <div class="row" style="margin-top:14px">
+      <button id="signInBtn">Zaloguj</button>
+      <button id="signUpBtn" class="ghost">Utwórz konto</button>
+    </div>
+    <div class="row" style="margin-top:10px"><button id="ghBtn" class="ghost">Przez GitHub</button></div>
     <div id="loginMsg"></div>
   </section>
 
@@ -123,15 +129,25 @@ async function route() {
   if (s) loadApp();
 }
 
-$('sendLink').onclick = async function () {
+$('signInBtn').onclick = async function () {
   if (!sb) return;
-  var email = $('email').value.trim();
   $('loginMsg').innerHTML = '';
-  if (!email) return;
-  var r = await sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.origin } });
-  $('loginMsg').innerHTML = r.error
-    ? '<div class="err">' + r.error.message + '</div>'
-    : '<div class="ok">Sprawdź maila i kliknij link.</div>';
+  var r = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('pass').value });
+  if (r.error) $('loginMsg').innerHTML = '<div class="err">' + r.error.message + '</div>';
+};
+$('signUpBtn').onclick = async function () {
+  if (!sb) return;
+  $('loginMsg').innerHTML = '';
+  var r = await sb.auth.signUp({ email: $('email').value.trim(), password: $('pass').value });
+  if (r.error) { $('loginMsg').innerHTML = '<div class="err">' + r.error.message + '</div>'; return; }
+  $('loginMsg').innerHTML = r.data.session
+    ? '<div class="ok">Konto utworzone, wchodzę...</div>'
+    : '<div class="ok">Konto utworzone. Jeśli prosi o potwierdzenie maila — potwierdź, albo wyłącz „Confirm email" w Supabase i zaloguj się.</div>';
+};
+$('ghBtn').onclick = async function () {
+  if (!sb) return;
+  var r = await sb.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: location.origin } });
+  if (r.error) $('loginMsg').innerHTML = '<div class="err">GitHub: ' + r.error.message + ' (włącz provider GitHub w Supabase)</div>';
 };
 
 $('logout').onclick = async function () { await sb.auth.signOut(); route(); };
