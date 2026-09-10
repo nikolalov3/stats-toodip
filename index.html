@@ -137,7 +137,7 @@ $('sendLink').onclick = async function () {
 $('logout').onclick = async function () { await sb.auth.signOut(); route(); };
 
 async function loadApp() {
-  var w = await sb.from('websites').select('*').order('created_at').limit(1);
+  var w = await sb.from('stats_websites').select('*').order('created_at').limit(1);
   var sites = w.data || [];
   if (!sites.length) {
     currentSite = null;
@@ -159,7 +159,7 @@ $('createBtn').onclick = async function () {
   var name = $('cName').value.trim();
   if (!name) return;
   $('createMsg').innerHTML = '';
-  var r = await sb.from('websites').insert({ name: name, domain: $('cDomain').value.trim() || null }).select();
+  var r = await sb.from('stats_websites').insert({ name: name, domain: $('cDomain').value.trim() || null }).select();
   if (r.error) { $('createMsg').innerHTML = '<div class="err">' + r.error.message + '</div>'; return; }
   loadApp();
 };
@@ -172,9 +172,9 @@ $('copyBtn').onclick = function () {
 
 async function loadStats(id) {
   var since = new Date(Date.now() - 30 * 864e5).toISOString();
-  var ev = await sb.from('events').select('ts, path').eq('website_id', id).gte('ts', since).order('ts');
+  var ev = await sb.from('stats_events').select('ts, path').eq('website_id', id).gte('ts', since).order('ts');
   var rows = ev.data || [];
-  var cnt = await sb.from('events').select('id', { count: 'exact', head: true }).eq('website_id', id);
+  var cnt = await sb.from('stats_events').select('id', { count: 'exact', head: true }).eq('website_id', id);
 
   var now = new Date();
   var startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();

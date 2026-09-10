@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   };
 
   try {
-    var r = await fetch(process.env.SUPABASE_URL + '/rest/v1/events', {
+    var r = await fetch(process.env.SUPABASE_URL + '/rest/v1/stats_events', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
