@@ -5,42 +5,69 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>toodip stats</title>
 <style>
-  :root{ --bg:#0f1115; --panel:#161a21; --line:#252b36; --ink:#e7ecf3; --soft:#8b94a3; --acc:#7fce4f; }
+  :root{
+    --bg:#0e1014; --panel:#151922; --panel2:#0b0d12; --line:#232937; --line2:#1a1f2b;
+    --ink:#e9edf3; --soft:#8a93a4; --dim:#5c6474;
+    --ai:#7fce4f; --ai2:#a6e57e; --rest:#39414f; --red:#ff6a6a;
+  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif}
-  a{color:var(--acc)}
-  .wrap{max-width:840px;margin:0 auto;padding:28px 20px 80px}
-  .brand{display:flex;align-items:baseline;gap:10px;margin-bottom:28px}
-  .brand b{font-size:20px;letter-spacing:.02em}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:var(--ai);text-decoration:none}
+  .wrap{max-width:980px;margin:0 auto;padding:24px 18px 90px}
+  .brand{display:flex;align-items:baseline;gap:10px;margin-bottom:22px}
+  .brand b{font-size:19px;letter-spacing:.01em}
   .brand span{color:var(--soft);font-size:12px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin:0 0 16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin:0 0 14px}
   h1{font-size:19px;margin:0 0 4px}
-  h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--soft);margin:0 0 14px;font-weight:600}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.13em;color:var(--soft);margin:0 0 16px;font-weight:600}
   p.sub{color:var(--soft);margin:0 0 16px}
+  .muted{color:var(--soft);font-size:13px}
+  .dim{color:var(--dim);font-size:12px}
   label{display:block;font-size:12px;color:var(--soft);margin:0 0 6px}
-  input{width:100%;background:#0c0e12;border:1px solid var(--line);border-radius:9px;color:var(--ink);padding:11px 12px;font-size:15px}
-  button{background:var(--acc);color:#0d1206;border:0;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:600;cursor:pointer}
+  input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:11px 12px;font-size:15px}
+  button{background:var(--ai);color:#0c1206;border:0;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:700;cursor:pointer}
   button.ghost{background:transparent;color:var(--soft);border:1px solid var(--line);font-weight:500}
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-  .stat{background:#0c0e12;border:1px solid var(--line);border-radius:11px;padding:14px}
-  .stat .n{font-size:26px;font-weight:700}
-  .stat .l{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
-  .bars{display:flex;align-items:flex-end;gap:4px;height:90px;margin-top:6px}
-  .bars .b{flex:1;background:var(--acc);opacity:.85;border-radius:3px 3px 0 0;min-height:2px}
-  .paths li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);list-style:none;font-size:14px}
-  .paths{margin:0;padding:0}
-  code,.snippet{font-family:ui-monospace,Menlo,monospace;font-size:13px}
-  .snippet{display:block;background:#0c0e12;border:1px solid var(--line);border-radius:9px;padding:12px;white-space:pre-wrap;word-break:break-all;color:#cfe6b8}
-  .muted{color:var(--soft);font-size:13px}
   .hidden{display:none}
-  .err{color:#ff7a7a;font-size:13px;margin-top:8px}
-  .ok{color:var(--acc);font-size:13px;margin-top:8px}
+  .err{color:var(--red);font-size:13px;margin-top:8px}
+  .ok{color:var(--ai);font-size:13px;margin-top:8px}
+  code,.snippet{font-family:ui-monospace,Menlo,monospace;font-size:13px}
+  .snippet{display:block;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-all;color:#cfe6b8}
+
+  /* KPI */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 14px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .kpi .n{font-size:28px;font-weight:800;letter-spacing:-.01em}
+  .kpi .l{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+  .kpi.hi .n{color:var(--ai)}
+
+  /* trend */
+  .trend{display:flex;align-items:flex-end;gap:5px;height:120px;margin-top:4px}
+  .tcol{flex:1;display:flex;align-items:flex-end;height:100%}
+  .tbar{width:100%;background:var(--rest);border-radius:4px 4px 0 0;min-height:3px;display:flex;align-items:flex-end;overflow:hidden}
+  .tbar .tai{width:100%;background:var(--ai)}
+  .legend{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--soft)}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+  /* two-col */
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){ .kpis{grid-template-columns:repeat(2,1fr)} .two{grid-template-columns:1fr} }
+
+  /* bar rows */
+  .brow{display:grid;grid-template-columns:minmax(90px,auto) 1fr 42px;gap:10px;align-items:center;padding:7px 0}
+  .brow .bl{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brow .bt{background:var(--line2);border-radius:5px;height:9px;overflow:hidden}
+  .brow .bt i{display:block;height:100%;background:var(--ai);border-radius:5px}
+  .brow.rest .bt i{background:var(--rest)}
+  .brow b{font-size:13.5px;text-align:right;font-variant-numeric:tabular-nums}
+  .empty{color:var(--dim);font-size:13px;padding:6px 0}
+  .pill{display:inline-block;font-size:11px;color:var(--soft);border:1px solid var(--line);border-radius:999px;padding:2px 9px;margin-left:8px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><b>toodip<span style="color:var(--acc)">·</span>stats</b><span>pomiar wejść</span></div>
+  <div class="brand"><b>toodip<span style="color:var(--ai)">·</span>stats</b><span>pomiar wejść i widoczności w AI</span></div>
 
   <!-- LOGIN -->
   <section id="login" class="card hidden">
@@ -62,12 +89,11 @@
   <section id="app" class="hidden">
     <div class="card">
       <div class="row" style="justify-content:space-between">
-        <div><h1 id="siteName">—</h1><div class="muted" id="siteDomain"></div></div>
-        <button class="ghost" id="logout">Wyloguj</button>
+        <div><h1 id="siteName">—</h1><div class="muted" id="siteMeta"></div></div>
+        <div class="row"><button class="ghost" id="reload">Odśwież</button><button class="ghost" id="logout">Wyloguj</button></div>
       </div>
     </div>
 
-    <!-- create site (jeśli user nie ma jeszcze żadnej) -->
     <div id="createCard" class="card hidden">
       <h2>Dodaj stronę</h2>
       <p class="sub">Darmowy plan: 1 strona na konto.</p>
@@ -79,26 +105,45 @@
       <div id="createMsg"></div>
     </div>
 
-    <!-- stats -->
     <div id="statsWrap" class="hidden">
+      <div class="kpis">
+        <div class="kpi"><div class="n" id="kVisits">0</div><div class="l">Wejścia · 30 dni</div></div>
+        <div class="kpi hi"><div class="n" id="kAi">0</div><div class="l">Z AI · 30 dni</div></div>
+        <div class="kpi hi"><div class="n" id="kPct">0%</div><div class="l">Udział AI</div></div>
+        <div class="kpi"><div class="n" id="kToday">0</div><div class="l">Dziś</div></div>
+      </div>
+
       <div class="card">
-        <h2>Wejścia</h2>
-        <div class="stats">
-          <div class="stat"><div class="n" id="nToday">0</div><div class="l">Dziś</div></div>
-          <div class="stat"><div class="n" id="n7">0</div><div class="l">7 dni</div></div>
-          <div class="stat"><div class="n" id="n30">0</div><div class="l">30 dni</div></div>
-          <div class="stat"><div class="n" id="nTotal">0</div><div class="l">Łącznie</div></div>
+        <h2>Ostatnie 14 dni</h2>
+        <div class="trend" id="trend"></div>
+        <div class="legend"><span><i style="background:var(--ai)"></i>z AI</span><span><i style="background:var(--rest)"></i>reszta</span></div>
+      </div>
+
+      <div class="two">
+        <div class="card">
+          <h2>Ruch z AI</h2>
+          <div id="aiBreak"></div>
         </div>
-        <h2 style="margin-top:20px">Ostatnie 14 dni</h2>
-        <div class="bars" id="bars"></div>
+        <div class="card">
+          <h2>Źródła ruchu</h2>
+          <div id="srcBreak"></div>
+        </div>
       </div>
-      <div class="card">
-        <h2>Najczęstsze strony</h2>
-        <ul class="paths" id="paths"></ul>
+
+      <div class="two">
+        <div class="card">
+          <h2>Najczęstsze strony</h2>
+          <div id="pages"></div>
+        </div>
+        <div class="card">
+          <h2>Boty AI <span class="pill">czy AI czyta stronę</span></h2>
+          <div id="bots"></div>
+        </div>
       </div>
+
       <div class="card">
         <h2>Skrypt do wklejenia</h2>
-        <p class="sub">Wklej tuż przed &lt;/head&gt; na stronie klienta.</p>
+        <p class="sub">Wklej przed &lt;/head&gt; na stronie klienta. Liczenie botów AI wymaga dodatkowo middleware (dokładamy osobno).</p>
         <code class="snippet" id="snippet"></code>
         <div class="row" style="margin-top:10px"><button class="ghost" id="copyBtn">Kopiuj</button></div>
       </div>
@@ -108,15 +153,16 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-/* ====== KONFIG — wklej z Supabase (Settings -> API). Anon key jest publiczny, RLS chroni dane. ====== */
+/* ====== KONFIG (Supabase Settings -> API; anon jest publiczny, RLS chroni dane) ====== */
 var CONFIG = {
   url:  'https://bobddzjokkxxbfcvmihy.supabase.co',
   anon: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvYmRkempva2t4eGJmY3ZtaWh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDY1ODEsImV4cCI6MjEwMTQ4MjU4MX0.FN6DdiaCQ2k3Hm9Ek9KvuD7ixNgF4o2tEKnVlHDRmBk'
 };
-/* =================================================================================================== */
+/* ==================================================================================== */
 
 var $ = function (id) { return document.getElementById(id); };
 var show = function (id, on) { $(id).classList.toggle('hidden', !on); };
+var esc = function (s) { return String(s == null ? '' : s).replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }); };
 var sb = null;
 try { if (String(CONFIG.url).slice(0, 4) === 'http') sb = window.supabase.createClient(CONFIG.url, CONFIG.anon); } catch (e) {}
 var currentSite = null;
@@ -130,103 +176,122 @@ async function route() {
 }
 
 $('signInBtn').onclick = async function () {
-  if (!sb) return;
-  $('loginMsg').innerHTML = '';
+  if (!sb) return; $('loginMsg').innerHTML = '';
   var r = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('pass').value });
-  if (r.error) $('loginMsg').innerHTML = '<div class="err">' + r.error.message + '</div>';
+  if (r.error) $('loginMsg').innerHTML = '<div class="err">' + esc(r.error.message) + '</div>';
 };
 $('signUpBtn').onclick = async function () {
-  if (!sb) return;
-  $('loginMsg').innerHTML = '';
+  if (!sb) return; $('loginMsg').innerHTML = '';
   var r = await sb.auth.signUp({ email: $('email').value.trim(), password: $('pass').value });
-  if (r.error) { $('loginMsg').innerHTML = '<div class="err">' + r.error.message + '</div>'; return; }
-  $('loginMsg').innerHTML = r.data.session
-    ? '<div class="ok">Konto utworzone, wchodzę...</div>'
+  if (r.error) { $('loginMsg').innerHTML = '<div class="err">' + esc(r.error.message) + '</div>'; return; }
+  $('loginMsg').innerHTML = r.data.session ? '<div class="ok">Konto utworzone, wchodzę...</div>'
     : '<div class="ok">Konto utworzone. Jeśli prosi o potwierdzenie maila — potwierdź, albo wyłącz „Confirm email" w Supabase i zaloguj się.</div>';
 };
 $('ghBtn').onclick = async function () {
   if (!sb) return;
   var r = await sb.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: location.origin } });
-  if (r.error) $('loginMsg').innerHTML = '<div class="err">GitHub: ' + r.error.message + ' (włącz provider GitHub w Supabase)</div>';
+  if (r.error) $('loginMsg').innerHTML = '<div class="err">GitHub: ' + esc(r.error.message) + ' (włącz provider GitHub w Supabase)</div>';
 };
-
 $('logout').onclick = async function () { await sb.auth.signOut(); route(); };
+$('reload').onclick = function () { if (currentSite) loadStats(currentSite.id); };
 
 async function loadApp() {
   var w = await sb.from('stats_websites').select('*').order('created_at').limit(1);
   var sites = w.data || [];
   if (!sites.length) {
-    currentSite = null;
-    $('siteName').textContent = 'Brak strony';
-    show('createCard', true);
-    show('statsWrap', false);
-    return;
+    currentSite = null; $('siteName').textContent = 'Brak strony';
+    show('createCard', true); show('statsWrap', false); return;
   }
   currentSite = sites[0];
-  show('createCard', false);
-  show('statsWrap', true);
+  show('createCard', false); show('statsWrap', true);
   $('siteName').textContent = currentSite.name;
-  $('siteDomain').textContent = currentSite.domain || '';
+  $('siteMeta').textContent = currentSite.domain || '';
   $('snippet').textContent = '<script defer src="' + location.origin + '/s.js" data-id="' + currentSite.id + '"><\/script>';
   loadStats(currentSite.id);
 }
 
 $('createBtn').onclick = async function () {
-  var name = $('cName').value.trim();
-  if (!name) return;
-  $('createMsg').innerHTML = '';
+  var name = $('cName').value.trim(); if (!name) return; $('createMsg').innerHTML = '';
   var r = await sb.from('stats_websites').insert({ name: name, domain: $('cDomain').value.trim() || null }).select();
-  if (r.error) { $('createMsg').innerHTML = '<div class="err">' + r.error.message + '</div>'; return; }
+  if (r.error) { $('createMsg').innerHTML = '<div class="err">' + esc(r.error.message) + '</div>'; return; }
   loadApp();
 };
-
 $('copyBtn').onclick = function () {
   navigator.clipboard && navigator.clipboard.writeText($('snippet').textContent);
-  $('copyBtn').textContent = 'Skopiowano';
-  setTimeout(function () { $('copyBtn').textContent = 'Kopiuj'; }, 1500);
+  $('copyBtn').textContent = 'Skopiowano'; setTimeout(function () { $('copyBtn').textContent = 'Kopiuj'; }, 1500);
 };
+
+function bars(container, items, opts) {
+  opts = opts || {};
+  if (!items.length) { $(container).innerHTML = '<div class="empty">' + (opts.empty || 'Brak danych.') + '</div>'; return; }
+  var max = Math.max.apply(null, items.map(function (i) { return i.v; })) || 1;
+  var tot = items.reduce(function (a, i) { return a + i.v; }, 0) || 1;
+  $(container).innerHTML = items.map(function (i) {
+    var pct = opts.pct ? ' ' + Math.round(i.v / tot * 100) + '%' : '';
+    return '<div class="brow ' + (opts.rest ? 'rest' : '') + '"><span class="bl">' + esc(i.k) + '</span>' +
+      '<span class="bt"><i style="width:' + Math.round(i.v / max * 100) + '%"></i></span><b>' + i.v + pct + '</b></div>';
+  }).join('');
+}
+function group(rows, keyFn) {
+  var m = {}; rows.forEach(function (r) { var k = keyFn(r); if (k == null) return; m[k] = (m[k] || 0) + 1; });
+  return Object.keys(m).map(function (k) { return { k: k, v: m[k] }; }).sort(function (a, b) { return b.v - a.v; });
+}
 
 async function loadStats(id) {
   var since = new Date(Date.now() - 30 * 864e5).toISOString();
-  var ev = await sb.from('stats_events').select('ts, path').eq('website_id', id).gte('ts', since).order('ts');
+  var ev = await sb.from('stats_events').select('ts,path,title,source,ai_name').eq('website_id', id).gte('ts', since).order('ts').limit(5000);
   var rows = ev.data || [];
   var cnt = await sb.from('stats_events').select('id', { count: 'exact', head: true }).eq('website_id', id);
+  var bt = await sb.from('stats_bot_hits').select('ts,bot,path').eq('website_id', id).gte('ts', since).order('ts', { ascending: false }).limit(2000);
+  var botRows = bt.data || [];
 
-  var now = new Date();
-  var startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  var d7 = now.getTime() - 7 * 864e5, d30 = now.getTime() - 30 * 864e5;
-  var today = 0, w7 = 0, w30 = 0, paths = {};
-  var days = {}; // yyyy-mm-dd -> count (14d)
-  for (var i = 13; i >= 0; i--) {
-    var dd = new Date(now.getTime() - i * 864e5);
-    days[dd.toISOString().slice(0, 10)] = 0;
-  }
+  var now = new Date(), startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  var ai30 = 0, today = 0;
+  var days = {}; for (var i = 13; i >= 0; i--) { days[new Date(now - i * 864e5).toISOString().slice(0, 10)] = { t: 0, a: 0 }; }
   rows.forEach(function (r) {
-    var t = new Date(r.ts).getTime();
-    if (t >= startToday) today++;
-    if (t >= d7) w7++;
-    if (t >= d30) w30++;
-    var key = r.ts.slice(0, 10);
-    if (key in days) days[key]++;
-    var p = r.path || '/';
-    paths[p] = (paths[p] || 0) + 1;
+    var t = new Date(r.ts).getTime(); var isAi = r.source === 'ai';
+    if (isAi) ai30++; if (t >= startToday) today++;
+    var key = r.ts.slice(0, 10); if (key in days) { days[key].t++; if (isAi) days[key].a++; }
   });
 
-  $('nToday').textContent = today;
-  $('n7').textContent = w7;
-  $('n30').textContent = w30;
-  $('nTotal').textContent = cnt.count || 0;
+  $('kVisits').textContent = rows.length;
+  $('kAi').textContent = ai30;
+  $('kPct').textContent = (rows.length ? Math.round(ai30 / rows.length * 100) : 0) + '%';
+  $('kToday').textContent = today;
+  $('siteMeta').textContent = (currentSite.domain ? currentSite.domain + ' · ' : '') + 'łącznie ' + (cnt.count || 0) + ' wejść';
 
-  var vals = Object.keys(days).map(function (k) { return days[k]; });
-  var max = Math.max(1, Math.max.apply(null, vals));
-  $('bars').innerHTML = Object.keys(days).map(function (k) {
-    return '<div class="b" title="' + k + ': ' + days[k] + '" style="height:' + Math.round(days[k] / max * 100) + '%"></div>';
+  // trend (stacked: AI + reszta)
+  var dvals = Object.keys(days).map(function (k) { return days[k].t; });
+  var dmax = Math.max(1, Math.max.apply(null, dvals));
+  $('trend').innerHTML = Object.keys(days).map(function (k) {
+    var d = days[k]; var hTotal = Math.round(d.t / dmax * 100); var hAi = d.t ? Math.round(d.a / d.t * 100) : 0;
+    return '<div class="tcol"><div class="tbar" title="' + k + ': ' + d.t + ' (z AI ' + d.a + ')" style="height:' + hTotal + '%">' +
+      '<div class="tai" style="height:' + hAi + '%"></div></div></div>';
   }).join('');
 
-  var top = Object.keys(paths).sort(function (a, b) { return paths[b] - paths[a]; }).slice(0, 8);
-  $('paths').innerHTML = top.length
-    ? top.map(function (p) { return '<li><span>' + p.replace(/</g, '&lt;') + '</span><b>' + paths[p] + '</b></li>'; }).join('')
-    : '<li class="muted">Brak danych. Wklej skrypt i wejdź na stronę.</li>';
+  // ruch z AI (po ai_name)
+  bars('aiBreak', group(rows.filter(function (r) { return r.source === 'ai'; }), function (r) { return r.ai_name || 'AI'; }),
+    { empty: 'Jeszcze zero. Gdy ChatGPT/Perplexity/Gemini zaczną odsyłać, pojawią się tu.' });
+
+  // źródła (ai/search/social/direct/other -> ładne nazwy)
+  var srcName = { ai: 'AI', search: 'Wyszukiwarki', social: 'Social', direct: 'Bezpośrednie', other: 'Inne' };
+  var srcItems = group(rows, function (r) { return srcName[r.source] || 'Bezpośrednie'; });
+  bars('srcBreak', srcItems, { pct: true, empty: 'Brak danych.' });
+
+  // top strony (path, z tytułem w dymku)
+  bars('pages', group(rows, function (r) { return r.path || '/'; }).slice(0, 8), { rest: true, empty: 'Brak danych. Wklej skrypt i wejdź na stronę.' });
+
+  // boty AI
+  var botAgg = group(botRows, function (r) { return r.bot || '?'; });
+  if (!botAgg.length) {
+    $('bots').innerHTML = '<div class="empty">Jeszcze brak wizyt botów AI. Sygnał ruszy po wpięciu middleware na stronie klienta.</div>';
+  } else {
+    var last = {}; botRows.forEach(function (r) { if (!last[r.bot]) last[r.bot] = r.ts; });
+    $('bots').innerHTML = botAgg.map(function (i) {
+      var when = last[i.k] ? new Date(last[i.k]).toLocaleDateString('pl-PL') : '';
+      return '<div class="brow"><span class="bl">' + esc(i.k) + '</span><span class="bl dim">ost. ' + when + '</span><b>' + i.v + '</b></div>';
+    }).join('');
+  }
 }
 
 if (sb) sb.auth.onAuthStateChange(function () { route(); });

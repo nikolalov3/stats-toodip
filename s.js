@@ -14,7 +14,13 @@
   var endpoint = host + '/api/collect';
 
   function hit() {
-    var body = JSON.stringify({ id: id, p: location.pathname, r: document.referrer || '' });
+    var body = JSON.stringify({
+      id: id,
+      p: location.pathname,
+      r: document.referrer || '',
+      t: (document.title || '').slice(0, 200),
+      l: (navigator.language || document.documentElement.lang || '').slice(0, 10)
+    });
     try {
       if (navigator.sendBeacon) {
         navigator.sendBeacon(endpoint, new Blob([body], { type: 'text/plain' }));

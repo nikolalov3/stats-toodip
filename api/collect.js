@@ -1,6 +1,36 @@
-/* Vercel serverless function: odbiera beacon o wejsciu i zapisuje go w Supabase.
-   Uzywa SERVICE ROLE key (server-side, sekret w env) -> omija RLS przy zapisie.
-   Env potrzebne: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY */
+/* Vercel serverless: odbiera wejscie (page view) i zapisuje do Supabase.
+   Klasyfikuje zrodlo ruchu (AI / wyszukiwarka / social / direct) po referrerze.
+   Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY */
+
+var AI = {
+  'chatgpt.com': 'ChatGPT', 'chat.openai.com': 'ChatGPT',
+  'perplexity.ai': 'Perplexity',
+  'gemini.google.com': 'Gemini', 'bard.google.com': 'Gemini',
+  'claude.ai': 'Claude',
+  'copilot.microsoft.com': 'Copilot',
+  'you.com': 'You.com', 'poe.com': 'Poe',
+  'chatgpt.co': 'ChatGPT'
+};
+
+function hostOf(url) {
+  try { return new URL(url).hostname.replace(/^www\./, '').toLowerCase(); } catch (e) { return ''; }
+}
+
+function classify(ref, params) {
+  // wprost otagowane linki od asystentow
+  var src = (params && (params.utm_source || params.ref) || '').toLowerCase();
+  for (var key in AI) { if (src.indexOf(key.split('.')[0]) >= 0) return { source: 'ai', ai: AI[key] }; }
+
+  if (!ref) return { source: 'direct', ai: null };
+  var h = hostOf(ref);
+  if (!h) return { source: 'other', ai: null };
+
+  for (var k in AI) { if (h === k || h.endsWith('.' + k)) return { source: 'ai', ai: AI[k] }; }
+  if (/(^|\.)(google|bing|duckduckgo|yahoo|yandex|ecosia|brave|baidu)\./.test(h)) return { source: 'search', ai: null };
+  if (/(^|\.)(facebook|fb|instagram|t\.co|twitter|x\.com|tiktok|linkedin|reddit|pinterest|youtube|snapchat)\./.test(h)) return { source: 'social', ai: null };
+  return { source: 'other', ai: null };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -12,15 +42,27 @@ export default async function handler(req, res) {
   if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { data = null; } }
   if (!data || !data.id) return res.status(400).end();
 
+  var path = String(data.p || '/').slice(0, 512);
+  var params = {};
+  try { new URL('http://x' + path).searchParams.forEach(function (v, k) { params[k] = v; }); } catch (e) {}
+
+  var cls = classify(data.r, params);
+  var ua = req.headers['user-agent'] || '';
+
   var row = {
     website_id: String(data.id),
-    path: String(data.p || '/').slice(0, 512),
+    path: path,
     referrer: String(data.r || '').slice(0, 512),
+    title: data.t ? String(data.t).slice(0, 200) : null,
+    lang: data.l ? String(data.l).slice(0, 10) : null,
+    source: cls.source,
+    ai_name: cls.ai,
+    device: /Mobi|Android|iPhone|iPad|iPod/.test(ua) ? 'mobile' : 'desktop',
     country: req.headers['x-vercel-ip-country'] || null
   };
 
   try {
-    var r = await fetch(process.env.SUPABASE_URL + '/rest/v1/stats_events', {
+    await fetch(process.env.SUPABASE_URL + '/rest/v1/stats_events', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,9 +72,6 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify(row)
     });
-    // 201/204 = ok; nieznany website_id lamie FK -> 4xx (odrzucamy po cichu)
-    return res.status(r.ok ? 204 : 204).end();
-  } catch (e) {
-    return res.status(204).end();
-  }
+  } catch (e) {}
+  return res.status(204).end();
 }
