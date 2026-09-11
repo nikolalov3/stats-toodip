@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "toodip-stats",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4333", "--directory", "/Users/nikola/Desktop/toodip-stats"],
+      "port": 4333
+    }
+  ]
+}

@@ -4,178 +4,292 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>toodip stats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0e1014; --panel:#151922; --panel2:#0b0d12; --line:#232937; --line2:#1a1f2b;
-    --ink:#e9edf3; --soft:#8a93a4; --dim:#5c6474;
-    --ai:#7fce4f; --ai2:#a6e57e; --rest:#39414f; --red:#ff6a6a;
+    --bg:oklch(0.994 0.001 250); --fg:oklch(0.21 0.013 258);
+    --card:oklch(1 0 0); --muted:oklch(0.967 0.003 250); --muted-fg:oklch(0.505 0.014 256);
+    --border:oklch(0.915 0.004 256); --border-soft:oklch(0.94 0.003 256);
+    --brand:oklch(0.53 0.128 240); --brand-soft:oklch(0.955 0.022 228); --brand-fg:oklch(0.99 0.002 250);
+    --positive:oklch(0.505 0.106 158); --positive-soft:oklch(0.955 0.028 158);
+    --caution:oklch(0.588 0.116 68); --caution-soft:oklch(0.962 0.038 78);
+    --critical:oklch(0.545 0.185 25.5); --critical-soft:oklch(0.962 0.026 22);
+    --sidebar:oklch(0.978 0.002 250); --sidebar-accent:oklch(0.945 0.004 250);
+    --rest:oklch(0.62 0.012 256); --radius:0.5rem;
+    --shadow:0 1px 2px 0 oklch(0.2 0.02 258 / .05);
+    --shadow-lg:0 1px 2px 0 oklch(0.2 0.02 258 / .06), 0 8px 24px -12px oklch(0.2 0.02 258 / .18);
+  }
+  html.dark{
+    --bg:oklch(0.168 0.008 258); --fg:oklch(0.958 0.003 250);
+    --card:oklch(0.202 0.009 258); --muted:oklch(0.248 0.01 258); --muted-fg:oklch(0.688 0.012 256);
+    --border:oklch(1 0 0 / 9%); --border-soft:oklch(1 0 0 / 6%);
+    --brand:oklch(0.76 0.135 226); --brand-soft:oklch(0.74 0.13 226 / .16); --brand-fg:oklch(0.17 0.008 258);
+    --positive:oklch(0.735 0.125 158); --positive-soft:oklch(0.735 0.125 158 / .14);
+    --caution:oklch(0.79 0.125 78); --caution-soft:oklch(0.79 0.125 78 / .14);
+    --critical:oklch(0.7 0.16 22); --critical-soft:oklch(0.7 0.16 22 / .15);
+    --sidebar:oklch(0.186 0.009 258); --sidebar-accent:oklch(0.255 0.01 258);
+    --rest:oklch(0.6 0.012 256);
+    --shadow:0 1px 2px 0 oklch(0 0 0 / .3); --shadow-lg:0 8px 24px -12px oklch(0 0 0 / .5);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif;-webkit-font-smoothing:antialiased}
-  a{color:var(--ai);text-decoration:none}
-  .wrap{max-width:980px;margin:0 auto;padding:24px 18px 90px}
-  .brand{display:flex;align-items:baseline;gap:10px;margin-bottom:22px}
-  .brand b{font-size:19px;letter-spacing:.01em}
-  .brand span{color:var(--soft);font-size:12px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin:0 0 14px}
-  h1{font-size:19px;margin:0 0 4px}
-  h2{font-size:12px;text-transform:uppercase;letter-spacing:.13em;color:var(--soft);margin:0 0 16px;font-weight:600}
-  p.sub{color:var(--soft);margin:0 0 16px}
-  .muted{color:var(--soft);font-size:13px}
-  .dim{color:var(--dim);font-size:12px}
-  label{display:block;font-size:12px;color:var(--soft);margin:0 0 6px}
-  input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:11px 12px;font-size:15px}
-  button{background:var(--ai);color:#0c1206;border:0;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:700;cursor:pointer}
-  button.ghost{background:transparent;color:var(--soft);border:1px solid var(--line);font-weight:500}
-  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .hidden{display:none}
-  .err{color:var(--red);font-size:13px;margin-top:8px}
-  .ok{color:var(--ai);font-size:13px;margin-top:8px}
-  code,.snippet{font-family:ui-monospace,Menlo,monospace;font-size:13px}
-  .snippet{display:block;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-all;color:#cfe6b8}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:14px/1.55 "Geist",-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:var(--brand);text-decoration:none}
+  .num{font-variant-numeric:tabular-nums}
+  .mono{font-family:"Geist Mono",ui-monospace,Menlo,monospace}
+  .hidden{display:none!important}
+  [hidden]{display:none!important}
 
-  /* KPI */
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 14px}
-  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
-  .kpi .n{font-size:28px;font-weight:800;letter-spacing:-.01em}
-  .kpi .l{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
-  .kpi.hi .n{color:var(--ai)}
+  /* ---------- login ---------- */
+  .authwrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+  .authcard{width:100%;max-width:380px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:var(--shadow-lg)}
+  .logo{display:flex;align-items:center;gap:8px;font-weight:600;font-size:16px;letter-spacing:-.01em}
+  .logo .dot{width:9px;height:9px;border-radius:3px;background:var(--brand)}
+  h1{font-size:18px;font-weight:600;letter-spacing:-.01em;margin:0}
+  label{display:block;font-size:12px;color:var(--muted-fg);margin:14px 0 6px;font-weight:500}
+  input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--fg);padding:10px 12px;font:inherit}
+  input:focus{outline:2px solid var(--brand);outline-offset:-1px;border-color:var(--brand)}
+  button{font:inherit;cursor:pointer;border-radius:9px;border:1px solid transparent;padding:9px 14px;font-weight:500}
+  .btn{background:var(--brand);color:var(--brand-fg);font-weight:600}
+  .btn.ghost{background:transparent;color:var(--fg);border-color:var(--border)}
+  .btn.sm{padding:6px 11px;font-size:13px}
+  .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .err{color:var(--critical);font-size:13px;margin-top:10px}
+  .ok{color:var(--positive);font-size:13px;margin-top:10px}
+  .sub{color:var(--muted-fg);font-size:13px;margin:6px 0 0}
 
-  /* trend */
-  .trend{display:flex;align-items:flex-end;gap:5px;height:120px;margin-top:4px}
+  /* ---------- shell ---------- */
+  .shell{display:grid;grid-template-columns:250px 1fr;min-height:100%}
+  .side{position:sticky;top:0;height:100vh;background:var(--sidebar);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;padding:16px 12px;gap:4px}
+  .side .brand{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;font-weight:600;letter-spacing:-.01em}
+  .sitechip{display:flex;flex-direction:column;gap:1px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:8px}
+  .sitechip .nm{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sitechip .dm{font-size:11.5px;color:var(--muted-fg)}
+  nav{display:flex;flex-direction:column;gap:2px;flex:1}
+  .nav{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--fg);
+    background:transparent;border:0;text-align:left;font-size:13.5px;font-weight:500;width:100%;transition:background .12s}
+  .nav:hover{background:var(--sidebar-accent)}
+  .nav.active{background:var(--brand-soft);color:var(--brand);font-weight:600}
+  .nav .ic{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7}
+  .nav .badge{margin-left:auto;font-size:11px;color:var(--muted-fg);font-weight:500}
+  .side .foot{border-top:1px solid var(--border);padding-top:10px;margin-top:4px;display:flex;flex-direction:column;gap:8px}
+  .who{font-size:12px;color:var(--muted-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
+
+  .main{min-width:0;padding:26px 30px 60px;max-width:1080px}
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
+  .topbar h1{font-size:20px}
+  .topbar .psub{color:var(--muted-fg);font-size:13px;margin-top:3px;max-width:640px}
+
+  /* ---------- cards / panels ---------- */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+  .card+.card,.grid+.card,.card+.grid,.grid+.grid{margin-top:14px}
+  .ph{display:flex;align-items:center;gap:7px;padding:15px 18px 0}
+  .ph h2{font-size:14px;font-weight:600;margin:0;letter-spacing:-.01em}
+  .ph .pd{font-size:12.5px;color:var(--muted-fg);padding:2px 18px 0}
+  .pb{padding:14px 18px 18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  h3{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted-fg);margin:0 0 11px;font-weight:600}
+
+  /* section intro (question-led, jak w toodip) */
+  .qhead{display:flex;align-items:flex-start;gap:11px;margin:26px 0 12px}
+  .qhead:first-child{margin-top:4px}
+  .qstep{margin-top:1px;flex:none;width:23px;height:23px;border-radius:50%;background:var(--brand-soft);color:var(--brand);
+    font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  .qhead .qt{font-size:15px;font-weight:600;letter-spacing:-.01em;margin:0;display:flex;align-items:center;gap:6px}
+  .qhead .qb{font-size:12.5px;color:var(--muted-fg);margin:2px 0 0}
+
+  /* ---------- KPI ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+  .kpi .kl{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted-fg);font-weight:500}
+  .kpi .kn{font-size:27px;font-weight:600;letter-spacing:-.02em;margin-top:7px}
+  .kpi.hi .kn{color:var(--brand)}
+
+  /* ---------- trend ---------- */
+  .trend{display:flex;align-items:flex-end;gap:5px;height:132px}
   .tcol{flex:1;display:flex;align-items:flex-end;height:100%}
-  .tbar{width:100%;background:var(--rest);border-radius:4px 4px 0 0;min-height:3px;display:flex;align-items:flex-end;overflow:hidden}
-  .tbar .tai{width:100%;background:var(--ai)}
-  .legend{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--soft)}
-  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .tbar{width:100%;background:var(--muted);border-radius:4px 4px 0 0;min-height:3px;display:flex;align-items:flex-end;overflow:hidden}
+  .tbar .tai{width:100%;background:var(--brand)}
+  .legend{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--muted-fg)}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
 
-  /* two-col */
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:720px){ .kpis{grid-template-columns:repeat(2,1fr)} .two{grid-template-columns:1fr} }
+  /* ---------- bar rows ---------- */
+  .brow{display:grid;grid-template-columns:minmax(90px,auto) 1fr 60px;gap:11px;align-items:center;padding:6px 0}
+  .brow .bl{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brow .bt{background:var(--muted);border-radius:5px;height:8px;overflow:hidden}
+  .brow .bt i{display:block;height:100%;background:var(--brand);border-radius:5px}
+  .brow.rest .bt i{background:var(--rest);opacity:.55}
+  .brow.self .bl{color:var(--brand);font-weight:600}
+  .brow b{font-size:13px;text-align:right}
+  .empty{color:var(--muted-fg);font-size:13px;padding:10px 0}
 
-  /* bar rows */
-  .brow{display:grid;grid-template-columns:minmax(90px,auto) 1fr 42px;gap:10px;align-items:center;padding:7px 0}
-  .brow .bl{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .brow .bt{background:var(--line2);border-radius:5px;height:9px;overflow:hidden}
-  .brow .bt i{display:block;height:100%;background:var(--ai);border-radius:5px}
-  .brow.rest .bt i{background:var(--rest)}
-  .brow b{font-size:13.5px;text-align:right;font-variant-numeric:tabular-nums}
-  .empty{color:var(--dim);font-size:13px;padding:6px 0}
-  .pill{display:inline-block;font-size:11px;color:var(--soft);border:1px solid var(--line);border-radius:999px;padding:2px 9px;margin-left:8px}
+  /* ---------- visibility tiles ---------- */
+  .vplat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px}
+  .vp{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .vp .pn{font-size:11px;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+  .vp .pv{font-size:25px;font-weight:600;margin-top:6px;letter-spacing:-.02em}
+  .vp .pr{font-size:12px;color:var(--muted-fg);margin-top:3px}
+  .flag{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;border-radius:999px;padding:3px 11px;border:1px solid}
+  .flag.no{color:var(--critical);border-color:color-mix(in oklch,var(--critical) 35%,transparent);background:var(--critical-soft)}
+  .flag.yes{color:var(--positive);border-color:color-mix(in oklch,var(--positive) 40%,transparent);background:var(--positive-soft)}
 
-  /* widocznosc w AI (gorny lejek) */
-  h3{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--soft);margin:0 0 12px;font-weight:600}
-  .vplat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-  .vp{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
-  .vp .pn{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.08em}
-  .vp .pv{font-size:24px;font-weight:800;margin-top:5px;letter-spacing:-.01em}
-  .vp .pr{font-size:12px;color:var(--soft);margin-top:3px;font-variant-numeric:tabular-nums}
-  .brow.self .bl{color:var(--ai);font-weight:700}
-  .flag{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:3px 11px}
-  .flag.no{color:var(--red);border:1px solid rgba(255,106,106,.35)}
-  .flag.yes{color:var(--ai);border:1px solid rgba(127,206,79,.4)}
+  .pill{display:inline-block;font-size:11px;color:var(--muted-fg);border:1px solid var(--border);border-radius:999px;padding:1px 8px;margin-left:6px;font-weight:500}
+  .snippet{display:block;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-all;font-family:"Geist Mono",ui-monospace,monospace;font-size:12.5px}
+
+  /* ---------- hint (?) ---------- */
+  .hint{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;
+    border:1px solid var(--border);color:var(--muted-fg);font-size:10px;font-weight:700;cursor:help;flex:none;line-height:1}
+  .hint:hover,.hint:focus{border-color:var(--brand);color:var(--brand);outline:none}
+  #tip{position:fixed;z-index:50;max-width:280px;background:var(--fg);color:var(--bg);font-size:12px;line-height:1.5;
+    padding:9px 11px;border-radius:9px;box-shadow:var(--shadow-lg);pointer-events:none}
+
+  /* ---------- responsive ---------- */
+  @media(max-width:860px){
+    .shell{grid-template-columns:1fr}
+    .side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:0;border-bottom:1px solid var(--border);padding:10px 12px}
+    .side .brand{padding:0 8px 0 4px}
+    .sitechip{display:none}
+    nav{flex-direction:row;flex-wrap:wrap;gap:4px;order:3;width:100%;margin-top:8px}
+    .nav{width:auto}.nav .badge{display:none}
+    .side .foot{border-top:0;padding-top:0;margin:0 0 0 auto;flex-direction:row;align-items:center}
+    .who{display:none}
+    .main{padding:20px 16px 50px}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .grid2{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="brand"><b>toodip<span style="color:var(--ai)">·</span>stats</b><span>pomiar wejść i widoczności w AI</span></div>
 
-  <!-- LOGIN -->
-  <section id="login" class="card hidden">
-    <h1>Zaloguj się</h1>
+<!-- ================= LOGIN ================= -->
+<div id="login" class="authwrap hidden">
+  <div class="authcard">
+    <div class="logo"><span class="dot"></span>toodip<span style="color:var(--muted-fg);font-weight:500">stats</span></div>
+    <h1 style="margin-top:18px">Zaloguj się</h1>
     <p class="sub">E-mail i hasło. Pierwszy raz? Kliknij „Utwórz konto".</p>
     <label>E-mail</label>
-    <input id="email" type="email" placeholder="ty@toodip.pl" autocomplete="email">
-    <label style="margin-top:12px">Hasło</label>
+    <input id="email" type="email" placeholder="ty@toodip.com" autocomplete="email">
+    <label>Hasło</label>
     <input id="pass" type="password" placeholder="min. 6 znaków" autocomplete="current-password">
-    <div class="row" style="margin-top:14px">
-      <button id="signInBtn">Zaloguj</button>
-      <button id="signUpBtn" class="ghost">Utwórz konto</button>
+    <div class="row" style="margin-top:16px">
+      <button id="signInBtn" class="btn">Zaloguj</button>
+      <button id="signUpBtn" class="btn ghost">Utwórz konto</button>
     </div>
-    <div class="row" style="margin-top:10px"><button id="ghBtn" class="ghost">Przez GitHub</button></div>
+    <div class="row" style="margin-top:9px"><button id="ghBtn" class="btn ghost sm">Przez GitHub</button></div>
     <div id="loginMsg"></div>
-  </section>
+  </div>
+</div>
 
-  <!-- APP -->
-  <section id="app" class="hidden">
-    <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <div><h1 id="siteName">—</h1><div class="muted" id="siteMeta"></div></div>
-        <div class="row"><button class="ghost" id="reload">Odśwież</button><button class="ghost" id="logout">Wyloguj</button></div>
-      </div>
+<!-- ================= APP SHELL ================= -->
+<div id="shell" class="shell hidden">
+  <aside class="side">
+    <div class="brand"><span class="dot" style="width:9px;height:9px;border-radius:3px;background:var(--brand)"></span>toodip<span style="color:var(--muted-fg);font-weight:500">stats</span></div>
+    <div class="sitechip" id="siteChip"><span class="nm" id="siteName">—</span><span class="dm" id="siteDomain"></span></div>
+    <nav id="nav">
+      <button class="nav active" data-view="overview"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Przegląd</button>
+      <button class="nav" data-view="visibility"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/></svg>Widoczność w AI</button>
+      <button class="nav" data-view="traffic"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>Ruch z AI</button>
+      <button class="nav" data-view="conversions"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="9"/></svg>Konwersje</button>
+      <button class="nav" data-view="bots"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M9 14h.01M15 14h.01"/></svg>Boty AI</button>
+      <button class="nav" data-view="install"><svg class="ic" viewBox="0 0 24 24"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 5l-2 14"/></svg>Instalacja</button>
+    </nav>
+    <div class="foot">
+      <button class="nav" id="themeToggle"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>Motyw</button>
+      <div class="who" id="who"></div>
+      <button class="btn ghost sm" id="logout" style="width:100%">Wyloguj</button>
     </div>
+  </aside>
 
+  <main class="main">
+    <header class="topbar">
+      <div><h1 id="pageTitle">Przegląd</h1><p class="psub" id="pageSub"></p></div>
+      <button class="btn ghost sm" id="reload">Odśwież</button>
+    </header>
+
+    <!-- create site -->
     <div id="createCard" class="card hidden">
-      <h2>Dodaj stronę</h2>
-      <p class="sub">Darmowy plan: 1 strona na konto.</p>
-      <label>Nazwa</label>
-      <input id="cName" placeholder="Café Belmont">
-      <label style="margin-top:12px">Domena (opcjonalnie)</label>
-      <input id="cDomain" placeholder="belmont.cafe">
-      <div class="row" style="margin-top:12px"><button id="createBtn">Utwórz i dostań skrypt</button></div>
-      <div id="createMsg"></div>
-    </div>
-
-    <div id="statsWrap" class="hidden">
-      <div class="kpis">
-        <div class="kpi"><div class="n" id="kVisits">0</div><div class="l">Odsłony · 30 dni</div></div>
-        <div class="kpi"><div class="n" id="kUniq">0</div><div class="l">Unikalni · 30 dni</div></div>
-        <div class="kpi hi"><div class="n" id="kAi">0</div><div class="l">Z AI · <span id="kPct">0%</span></div></div>
-        <div class="kpi hi"><div class="n" id="kConv">0</div><div class="l">Konwersje · 30 dni</div></div>
-      </div>
-
-      <div class="card">
-        <h2>Ostatnie 14 dni</h2>
-        <div class="trend" id="trend"></div>
-        <div class="legend"><span><i style="background:var(--ai)"></i>z AI</span><span><i style="background:var(--rest)"></i>reszta</span></div>
-      </div>
-
-      <div class="card hidden" id="visCard">
-        <h2>Widoczność w AI — czy Cię poleca <span class="pill">górny lejek</span></h2>
-        <div class="vplat" id="visPlatforms"></div>
-        <div style="margin:16px 0 4px"><span class="muted">Twoja strona cytowana przez AI:</span> <span id="visSite"></span></div>
-        <div class="two" style="margin-top:14px">
-          <div><h3>Kto wygrywa Twoją kategorię</h3><div id="visRanking"></div></div>
-          <div><h3>Cytowane źródła <span class="pill">kto posiada temat</span></h3><div id="visSources"></div></div>
-        </div>
-      </div>
-
-      <div class="two">
-        <div class="card">
-          <h2>Ruch z AI</h2>
-          <div id="aiBreak"></div>
-        </div>
-        <div class="card">
-          <h2>Źródła ruchu</h2>
-          <div id="srcBreak"></div>
-        </div>
-      </div>
-
-      <div class="two">
-        <div class="card">
-          <h2>Konwersje <span class="pill">co robi ruch</span></h2>
-          <div id="conv"></div>
-        </div>
-        <div class="card">
-          <h2>Najczęstsze strony</h2>
-          <div id="pages"></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Boty AI <span class="pill">czy AI czyta stronę</span></h2>
-        <div id="bots"></div>
-      </div>
-
-      <div class="card">
-        <h2>Skrypt do wklejenia</h2>
-        <p class="sub">Wklej przed &lt;/head&gt; na stronie klienta. Liczenie botów AI wymaga dodatkowo middleware (dokładamy osobno).</p>
-        <code class="snippet" id="snippet"></code>
-        <div class="row" style="margin-top:10px"><button class="ghost" id="copyBtn">Kopiuj</button></div>
+      <div class="ph"><h2>Dodaj stronę</h2></div>
+      <div class="pd">Darmowy plan: 1 strona na konto.</div>
+      <div class="pb">
+        <label>Nazwa</label><input id="cName" placeholder="Café Belmont">
+        <label>Domena (opcjonalnie)</label><input id="cDomain" placeholder="belmont.cafe">
+        <div class="row" style="margin-top:14px"><button id="createBtn" class="btn">Utwórz i dostań skrypt</button></div>
+        <div id="createMsg"></div>
       </div>
     </div>
-  </section>
+
+    <div id="views">
+      <!-- ===== PRZEGLĄD ===== -->
+      <section data-panel="overview">
+        <div class="kpis">
+          <div class="kpi"><div class="kl">Odsłony · 30 dni <span class="hint" tabindex="0" data-tip="Każde wejście na stronę (page view). Przejścia w obrębie strony też liczone. Mierzone skryptem s.js w przeglądarce odwiedzającego.">?</span></div><div class="kn num" id="kVisits">0</div></div>
+          <div class="kpi"><div class="kl">Unikalni · 30 dni <span class="hint" tabindex="0" data-tip="Szacunkowa liczba różnych osób. Liczone cookieless: dzienny nieodwracalny hash z IP+przeglądarki, bez zapisu danych osobowych. Ta sama osoba w kolejnym dniu liczy się od nowa.">?</span></div><div class="kn num" id="kUniq">0</div></div>
+          <div class="kpi hi"><div class="kl">Z AI · <span id="kPct">0%</span> <span class="hint" tabindex="0" data-tip="Odsłony, które przyszły z asystentów AI (ChatGPT, Perplexity, Gemini, Claude…). Rozpoznawane po źródle wejścia (referrer) — czyli skąd ktoś kliknął w link.">?</span></div><div class="kn num" id="kAi">0</div></div>
+          <div class="kpi hi"><div class="kl">Konwersje · 30 dni <span class="hint" tabindex="0" data-tip="Kliknięcia, które coś znaczą: telefon, dojazd (mapy), Instagram, Facebook, rezerwacja. Łapane automatycznie przez skrypt, bez konfiguracji.">?</span></div><div class="kn num" id="kConv">0</div></div>
+        </div>
+
+        <div class="qhead"><span class="qstep">1</span><div><p class="qt">Ile ludzi i skąd? <span class="hint" tabindex="0" data-tip="Odsłony dzień po dniu, ostatnie 14 dni. Zielony/niebieski segment słupka = wejścia z AI, szary = cała reszta.">?</span></p><p class="qb">Odsłony dzień po dniu. Niebieskie = z AI, szare = reszta.</p></div></div>
+        <div class="card"><div class="pb"><div class="trend" id="trend"></div>
+          <div class="legend"><span><i style="background:var(--brand)"></i>z AI</span><span><i style="background:var(--muted)"></i>reszta</span></div></div></div>
+
+        <div class="qhead"><span class="qstep">2</span><div><p class="qt">Które strony ogląda ruch? <span class="hint" tabindex="0" data-tip="Najczęściej otwierane adresy w Twojej witrynie w ostatnich 30 dniach. Pokazuje, która treść przyciąga uwagę.">?</span></p><p class="qb">Najczęściej otwierane podstrony (30 dni).</p></div></div>
+        <div class="card"><div class="pb"><div id="pages"></div></div></div>
+      </section>
+
+      <!-- ===== WIDOCZNOŚĆ W AI ===== -->
+      <section data-panel="visibility" hidden>
+        <div id="visEmpty" class="card hidden"><div class="pb"><p class="empty" style="padding:6px 0">Brak pomiarów widoczności. Wgraj wynik z terminala:<br><span class="mono" style="font-size:12px">python3 scripts/stats_push.py &lt;pomiar.json&gt; --site &lt;id&gt; --domain &lt;domena&gt;</span></p></div></div>
+
+        <div id="visBody" class="hidden">
+          <div class="qhead"><span class="qstep">1</span><div><p class="qt">Czy AI mnie poleca? <span class="hint" tabindex="0" data-tip="Gdy klient pyta asystenta o kategorię (np. „gdzie na matchę w Krakowie"), sprawdzamy w ilu odpowiedziach pada Twój lokal. Obecność = trafienia ÷ liczba pytań. Pomiar robimy w terminalu, każde pytanie powtarzane wielokrotnie i uśredniane — dlatego to nie przypadek.">?</span></p><p class="qb">Obecność i pozycja osobno dla każdego asystenta — bo każdy czyta inną część internetu.</p></div></div>
+          <div class="card"><div class="pb"><div class="vplat" id="visPlatforms"></div>
+            <div style="margin-top:15px;display:flex;align-items:center;gap:9px;flex-wrap:wrap"><span style="font-size:13px;color:var(--muted-fg)">Twoja strona cytowana przez AI</span>
+              <span class="hint" tabindex="0" data-tip="Czy asystent podaje Twoją domenę jako źródło odpowiedzi. Własna strona rzadko bywa cytowana — jeśli jest, to mocny sygnał. Cel: żeby zaczęła być.">?</span>
+              <span id="visSite"></span></div></div></div>
+
+          <div class="qhead"><span class="qstep">2</span><div><p class="qt">Kto zajmuje moje miejsce? <span class="hint" tabindex="0" data-tip="Lokale, które asystent wymienia na te same pytania klientów. To Twoja realna konkurencja w AI — niekoniecznie ta sama, co w Google. Liczba = w ilu odpowiedziach padła dana nazwa.">?</span></p><p class="qb">Lokale, które AI wymienia zamiast Ciebie. Twój podświetlony.</p></div></div>
+          <div class="card"><div class="pb"><div id="visRanking"></div></div></div>
+
+          <div class="qhead"><span class="qstep">3</span><div><p class="qt">Co czyta AI, żeby odpowiedzieć? <span class="hint" tabindex="0" data-tip="Strony, z których asystent buduje odpowiedź o Twojej kategorii (blogi, przewodniki, mapy, social). Jeśli Cię tam nie ma, AI nie ma czym Cię polecić. Liczba = ile razy dana domena była cytowana.">?</span></p><p class="qb">Źródła, z których AI składa odpowiedzi. Tu trzeba być.</p></div></div>
+          <div class="card"><div class="pb"><div id="visSources"></div></div></div>
+        </div>
+      </section>
+
+      <!-- ===== RUCH Z AI ===== -->
+      <section data-panel="traffic" hidden>
+        <div class="qhead"><span class="qstep">1</span><div><p class="qt">Który asystent mnie odsyła? <span class="hint" tabindex="0" data-tip="Rozbicie wejść z AI według asystenta (ChatGPT, Perplexity, Gemini, Claude…). Pokazuje, który realnie przysyła Ci ludzi.">?</span></p><p class="qb">Wejścia z AI wg asystenta.</p></div></div>
+        <div class="card"><div class="pb"><div id="aiBreak"></div></div></div>
+
+        <div class="qhead"><span class="qstep">2</span><div><p class="qt">Skąd w ogóle biorą się wejścia? <span class="hint" tabindex="0" data-tip="Podział całego ruchu na kanały: AI, wyszukiwarki (Google, Bing), social (IG, FB), bezpośrednie (wpisany adres) i inne. Rozpoznawane po źródle wejścia.">?</span></p><p class="qb">Cały ruch wg kanału.</p></div></div>
+        <div class="card"><div class="pb"><div id="srcBreak"></div></div></div>
+      </section>
+
+      <!-- ===== KONWERSJE ===== -->
+      <section data-panel="conversions" hidden>
+        <div class="qhead"><span class="qstep">1</span><div><p class="qt">Co robi ruch na stronie? <span class="hint" tabindex="0" data-tip="Zdarzenia-pieniądze: kliknięcia w telefon, dojazd (mapy), Instagram, Facebook, rezerwację. Skrypt łapie je automatycznie z linków. Dodatkowe można oznaczyć atrybutem data-toodip lub wywołać toodip('nazwa').">?</span></p><p class="qb">Kliknięcia, które prowadzą do wizyty albo kontaktu.</p></div></div>
+        <div class="card"><div class="pb"><div id="conv"></div></div></div>
+      </section>
+
+      <!-- ===== BOTY AI ===== -->
+      <section data-panel="bots" hidden>
+        <div class="qhead"><span class="qstep">1</span><div><p class="qt">Czy AI w ogóle czyta moją stronę? <span class="hint" tabindex="0" data-tip="Roboty asystentów (GPTBot, ClaudeBot, PerplexityBot, Google-Extended…) które pobierają Twoją stronę, żeby ją znać. Liczone po stronie serwera (middleware), nie w przeglądarce. Brak botów = AI nie zbiera jeszcze Twoich treści.">?</span></p><p class="qb">Roboty AI pobierające Twoją stronę i kiedy ostatnio.</p></div></div>
+        <div class="card"><div class="pb"><div id="bots"></div></div></div>
+      </section>
+
+      <!-- ===== INSTALACJA ===== -->
+      <section data-panel="install" hidden>
+        <div class="qhead"><span class="qstep">1</span><div><p class="qt">Skrypt na stronę <span class="hint" tabindex="0" data-tip="Wklej tuż przed zamknięciem &lt;/head&gt; na stronie klienta. Liczy ludzi i konwersje. Boty AI wymagają dodatkowo middleware — dokładamy osobno.">?</span></p><p class="qb">Wklej przed &lt;/head&gt; na stronie klienta.</p></div></div>
+        <div class="card"><div class="pb">
+          <code class="snippet" id="snippet"></code>
+          <div class="row" style="margin-top:11px"><button class="btn ghost sm" id="copyBtn">Kopiuj</button></div>
+        </div></div>
+      </section>
+    </div>
+  </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -194,12 +308,63 @@ var sb = null;
 try { if (String(CONFIG.url).slice(0, 4) === 'http') sb = window.supabase.createClient(CONFIG.url, CONFIG.anon); } catch (e) {}
 var currentSite = null;
 
+/* ---------- motyw ---------- */
+(function () {
+  var pref = null; try { pref = localStorage.getItem('toodip.theme'); } catch (e) {}
+  var dark = pref ? pref === 'dark' : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.classList.toggle('dark', dark);
+})();
+
+/* ---------- tooltip ---------- */
+var tip = document.createElement('div'); tip.id = 'tip'; tip.hidden = true; document.body.appendChild(tip);
+function showTip(el) {
+  tip.textContent = el.getAttribute('data-tip'); tip.hidden = false;
+  tip.style.left = '0px'; tip.style.top = '0px';
+  var r = el.getBoundingClientRect(), t = tip.getBoundingClientRect();
+  var x = Math.max(8, Math.min(r.left + r.width / 2 - t.width / 2, innerWidth - t.width - 8));
+  var y = r.bottom + 8; if (y + t.height > innerHeight - 8) y = r.top - t.height - 8;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+document.addEventListener('mouseover', function (e) { var h = e.target.closest && e.target.closest('.hint'); if (h) showTip(h); });
+document.addEventListener('mouseout', function (e) { if (e.target.closest && e.target.closest('.hint')) tip.hidden = true; });
+document.addEventListener('focusin', function (e) { var el = e.target; if (el.classList && el.classList.contains('hint')) showTip(el); });
+document.addEventListener('focusout', function (e) { var el = e.target; if (el.classList && el.classList.contains('hint')) tip.hidden = true; });
+window.addEventListener('scroll', function () { tip.hidden = true; }, true);
+
+/* ---------- nawigacja / widoki ---------- */
+var VIEW_META = {
+  overview:    { t: 'Przegląd',        s: '' },
+  visibility:  { t: 'Widoczność w AI', s: 'Czy asystenci polecają Twój lokal, gdy klient o niego pyta.' },
+  traffic:     { t: 'Ruch z AI',       s: 'Kto realnie przysyła Ci ludzi z asystentów AI.' },
+  conversions: { t: 'Konwersje',       s: 'Co ruch robi na stronie: telefon, dojazd, rezerwacja.' },
+  bots:        { t: 'Boty AI',         s: 'Czy roboty asystentów pobierają Twoją stronę.' },
+  install:     { t: 'Instalacja',      s: 'Kod do wklejenia na stronę klienta.' }
+};
+function setView(v) {
+  if (!VIEW_META[v]) v = 'overview';
+  var navs = document.querySelectorAll('.nav[data-view]');
+  for (var i = 0; i < navs.length; i++) navs[i].classList.toggle('active', navs[i].getAttribute('data-view') === v);
+  var panels = document.querySelectorAll('[data-panel]');
+  for (var j = 0; j < panels.length; j++) panels[j].hidden = panels[j].getAttribute('data-panel') !== v;
+  $('pageTitle').textContent = VIEW_META[v].t;
+  $('pageSub').textContent = VIEW_META[v].s;
+  try { localStorage.setItem('toodip.view', v); } catch (e) {}
+}
+(function () {
+  var navs = document.querySelectorAll('.nav[data-view]');
+  for (var i = 0; i < navs.length; i++) navs[i].addEventListener('click', function () { setView(this.getAttribute('data-view')); });
+})();
+$('themeToggle').onclick = function () {
+  var dark = !document.documentElement.classList.contains('dark');
+  document.documentElement.classList.toggle('dark', dark);
+  try { localStorage.setItem('toodip.theme', dark ? 'dark' : 'light'); } catch (e) {}
+};
+
 async function route() {
-  if (!sb) { show('login', true); show('app', false); $('loginMsg').innerHTML = '<div class="err">Uzupełnij CONFIG (SUPABASE_URL + anon key) w index.html.</div>'; return; }
+  if (!sb) { show('login', true); show('shell', false); $('loginMsg').innerHTML = '<div class="err">Uzupełnij CONFIG (SUPABASE_URL + anon key) w index.html.</div>'; return; }
   var s = (await sb.auth.getSession()).data.session;
-  show('login', !s);
-  show('app', !!s);
-  if (s) loadApp();
+  show('login', !s); show('shell', !!s);
+  if (s) { $('who').textContent = (s.user && s.user.email) || ''; loadApp(); }
 }
 
 $('signInBtn').onclick = async function () {
@@ -226,14 +391,18 @@ async function loadApp() {
   var w = await sb.from('stats_websites').select('*').order('created_at').limit(1);
   var sites = w.data || [];
   if (!sites.length) {
-    currentSite = null; $('siteName').textContent = 'Brak strony';
-    show('createCard', true); show('statsWrap', false); return;
+    currentSite = null;
+    $('siteName').textContent = 'Brak strony'; $('siteDomain').textContent = '';
+    show('createCard', true); $('views').classList.add('hidden'); $('nav').style.visibility = 'hidden';
+    return;
   }
   currentSite = sites[0];
-  show('createCard', false); show('statsWrap', true);
+  show('createCard', false); $('views').classList.remove('hidden'); $('nav').style.visibility = 'visible';
   $('siteName').textContent = currentSite.name;
-  $('siteMeta').textContent = currentSite.domain || '';
+  $('siteDomain').textContent = currentSite.domain || '';
   $('snippet').textContent = '<script defer src="' + location.origin + '/s.js" data-id="' + currentSite.id + '"><\/script>';
+  var v = 'overview'; try { v = localStorage.getItem('toodip.view') || 'overview'; } catch (e) {}
+  setView(v);
   loadStats(currentSite.id);
 }
 
@@ -256,7 +425,7 @@ function bars(container, items, opts) {
   $(container).innerHTML = items.map(function (i) {
     var pct = opts.pct ? ' ' + Math.round(i.v / tot * 100) + '%' : '';
     return '<div class="brow ' + (opts.rest ? 'rest' : '') + '"><span class="bl">' + esc(i.k) + '</span>' +
-      '<span class="bt"><i style="width:' + Math.round(i.v / max * 100) + '%"></i></span><b>' + i.v + pct + '</b></div>';
+      '<span class="bt"><i style="width:' + Math.round(i.v / max * 100) + '%"></i></span><b class="num">' + i.v + pct + '</b></div>';
   }).join('');
 }
 function group(rows, keyFn) {
@@ -266,42 +435,39 @@ function group(rows, keyFn) {
 
 var PLAT = { chatgpt: 'ChatGPT', 'google-ai': 'Google AI', perplexity: 'Perplexity', gemini: 'Gemini' };
 function renderVis(rows) {
-  if (!rows.length) { show('visCard', false); return; }
-  show('visCard', true);
+  if (!rows.length) { show('visEmpty', true); $('visBody').classList.add('hidden'); return; }
+  show('visEmpty', false); $('visBody').classList.remove('hidden');
 
-  // najnowszy pomiar per platforma (rows juz posortowane malejaco po dacie)
-  var latest = {};
-  rows.forEach(function (r) { if (!latest[r.platform]) latest[r.platform] = r; });
+  var latest = {}; rows.forEach(function (r) { if (!latest[r.platform]) latest[r.platform] = r; });
   var plats = Object.keys(latest);
 
   $('visPlatforms').innerHTML = plats.map(function (p) {
     var r = latest[p];
     var pres = r.presence_pct != null ? r.presence_pct + '%' : '—';
     var rank = r.rank ? '#' + r.rank + (r.competitors ? '/' + r.competitors : '') : 'poza rankingiem';
-    return '<div class="vp"><div class="pn">' + esc(PLAT[p] || p) + '</div><div class="pv">' + pres + '</div>' +
-      '<div class="pr">' + rank + ' · ' + (r.hits || 0) + '/' + (r.questions || 0) + ' pytań · ' + esc(r.measured_on) + '</div></div>';
+    return '<div class="vp"><div class="pn">' + esc(PLAT[p] || p) + '</div><div class="pv num">' + pres + '</div>' +
+      '<div class="pr num">' + rank + ' · ' + (r.hits || 0) + '/' + (r.questions || 0) + ' pytań · ' + esc(r.measured_on) + '</div></div>';
   }).join('');
 
   var citedIn = plats.filter(function (p) { return latest[p].own_site_cited === true; }).map(function (p) { return PLAT[p] || p; });
   var anyKnown = plats.some(function (p) { return latest[p].own_site_cited != null; });
   $('visSite').innerHTML = citedIn.length ? '<span class="flag yes">tak — ' + esc(citedIn.join(', ')) + '</span>'
-    : (anyKnown ? '<span class="flag no">jeszcze nie</span>' : '<span class="muted">—</span>');
+    : (anyKnown ? '<span class="flag no">jeszcze nie</span>' : '<span class="sub" style="margin:0">—</span>');
 
-  // ranking + zrodla z najnowszego pomiaru (rows[0])
   var top = rows[0];
   var rk = (top.ranking || []).slice(0, 8);
   var rmax = Math.max.apply(null, rk.map(function (x) { return x[1]; }).concat([1]));
   $('visRanking').innerHTML = rk.length ? rk.map(function (x, i) {
     var self = (i + 1) === top.rank;
     return '<div class="brow ' + (self ? 'self' : 'rest') + '"><span class="bl">' + (i + 1) + '. ' + esc(x[0]) + '</span>' +
-      '<span class="bt"><i style="width:' + Math.round(x[1] / rmax * 100) + '%"></i></span><b>' + x[1] + '</b></div>';
+      '<span class="bt"><i style="width:' + Math.round(x[1] / rmax * 100) + '%"></i></span><b class="num">' + x[1] + '</b></div>';
   }).join('') : '<div class="empty">Brak rankingu.</div>';
 
   var sr = (top.sources || []).slice(0, 8);
   var smax = Math.max.apply(null, sr.map(function (x) { return x[1]; }).concat([1]));
   $('visSources').innerHTML = sr.length ? sr.map(function (x) {
     return '<div class="brow rest"><span class="bl">' + esc(x[0]) + '</span>' +
-      '<span class="bt"><i style="width:' + Math.round(x[1] / smax * 100) + '%"></i></span><b>' + x[1] + '</b></div>';
+      '<span class="bt"><i style="width:' + Math.round(x[1] / smax * 100) + '%"></i></span><b class="num">' + x[1] + '</b></div>';
   }).join('') : '<div class="empty">Brak danych o źródłach.</div>';
 }
 
@@ -314,7 +480,6 @@ async function loadStats(id) {
   var ms = await sb.from('stats_measurements').select('platform,measured_on,presence_pct,hits,questions,rank,competitors,own_site_cited,ranking,sources,note').eq('website_id', id).order('measured_on', { ascending: false }).limit(50);
   renderVis(ms.data || []);
 
-  // pageview vs zdarzenie (stare wiersze maja type=null -> traktujemy jak pageview)
   var rows = all.filter(function (r) { return r.type !== 'event'; });
   var events = all.filter(function (r) { return r.type === 'event'; });
 
@@ -333,9 +498,7 @@ async function loadStats(id) {
   $('kAi').textContent = ai30;
   $('kPct').textContent = (rows.length ? Math.round(ai30 / rows.length * 100) : 0) + '%';
   $('kConv').textContent = events.length;
-  $('siteMeta').textContent = (currentSite.domain ? currentSite.domain + ' · ' : '') + uniqN + ' unikalnych / ' + rows.length + ' odsłon (30 dni)';
 
-  // trend (stacked: AI + reszta)
   var dvals = Object.keys(days).map(function (k) { return days[k].t; });
   var dmax = Math.max(1, Math.max.apply(null, dvals));
   $('trend').innerHTML = Object.keys(days).map(function (k) {
@@ -344,25 +507,19 @@ async function loadStats(id) {
       '<div class="tai" style="height:' + hAi + '%"></div></div></div>';
   }).join('');
 
-  // ruch z AI (po ai_name)
   bars('aiBreak', group(rows.filter(function (r) { return r.source === 'ai'; }), function (r) { return r.ai_name || 'AI'; }),
     { empty: 'Jeszcze zero. Gdy ChatGPT/Perplexity/Gemini zaczną odsyłać, pojawią się tu.' });
 
-  // źródła (ai/search/social/direct/other -> ładne nazwy)
   var srcName = { ai: 'AI', search: 'Wyszukiwarki', social: 'Social', direct: 'Bezpośrednie', other: 'Inne' };
-  var srcItems = group(rows, function (r) { return srcName[r.source] || 'Bezpośrednie'; });
-  bars('srcBreak', srcItems, { pct: true, empty: 'Brak danych.' });
+  bars('srcBreak', group(rows, function (r) { return srcName[r.source] || 'Bezpośrednie'; }), { pct: true });
 
-  // konwersje (zdarzenia-pieniadze po nazwie)
   var convName = { phone: 'Telefon', directions: 'Mapy / dojazd', instagram: 'Instagram', facebook: 'Facebook',
     email: 'E-mail', whatsapp: 'WhatsApp', rezerwacja: 'Rezerwacja', menu: 'Menu' };
   bars('conv', group(events, function (r) { return convName[r.name] || (r.name || 'zdarzenie'); }),
     { empty: 'Brak jeszcze konwersji. Liczymy klik w telefon, mapy, IG i Facebooka.' });
 
-  // top strony (path, z tytułem w dymku)
   bars('pages', group(rows, function (r) { return r.path || '/'; }).slice(0, 8), { rest: true, empty: 'Brak danych. Wklej skrypt i wejdź na stronę.' });
 
-  // boty AI
   var botAgg = group(botRows, function (r) { return r.bot || '?'; });
   if (!botAgg.length) {
     $('bots').innerHTML = '<div class="empty">Jeszcze brak wizyt botów AI. Sygnał ruszy po wpięciu middleware na stronie klienta.</div>';
@@ -370,7 +527,9 @@ async function loadStats(id) {
     var last = {}; botRows.forEach(function (r) { if (!last[r.bot]) last[r.bot] = r.ts; });
     $('bots').innerHTML = botAgg.map(function (i) {
       var when = last[i.k] ? new Date(last[i.k]).toLocaleDateString('pl-PL') : '';
-      return '<div class="brow"><span class="bl">' + esc(i.k) + '</span><span class="bl dim">ost. ' + when + '</span><b>' + i.v + '</b></div>';
+      var mx = Math.max.apply(null, botAgg.map(function (b) { return b.v; })) || 1;
+      return '<div class="brow"><span class="bl">' + esc(i.k) + '</span>' +
+        '<span class="bt"><i style="width:' + Math.round(i.v / mx * 100) + '%"></i></span><b class="num">' + i.v + '<span style="color:var(--muted-fg);font-weight:400"> · ' + when + '</span></b></div>';
     }).join('');
   }
 }
