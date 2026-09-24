@@ -245,17 +245,16 @@
         <div id="visEmpty" class="card hidden"><div class="pb"><p class="empty" style="padding:6px 0">Brak pomiarów widoczności. Wgraj wynik z terminala:<br><span class="mono" style="font-size:12px">python3 scripts/stats_push.py &lt;pomiar.json&gt; --site &lt;id&gt; --domain &lt;domena&gt;</span></p></div></div>
 
         <div id="visBody" class="hidden">
-          <div class="qhead"><span class="qstep">1</span><div><p class="qt">Czy AI mnie poleca? <span class="hint" tabindex="0" data-tip="Gdy klient pyta asystenta o kategorię (np. „gdzie na matchę w Krakowie"), sprawdzamy w ilu odpowiedziach pada Twój lokal. Obecność = trafienia ÷ liczba pytań. Pomiar robimy w terminalu, każde pytanie powtarzane wielokrotnie i uśredniane — dlatego to nie przypadek.">?</span></p><p class="qb">Obecność i pozycja osobno dla każdego asystenta — bo każdy czyta inną część internetu.</p></div></div>
-          <div class="card"><div class="pb"><div class="vplat" id="visPlatforms"></div>
-            <div style="margin-top:15px;display:flex;align-items:center;gap:9px;flex-wrap:wrap"><span style="font-size:13px;color:var(--muted-fg)">Twoja strona cytowana przez AI</span>
-              <span class="hint" tabindex="0" data-tip="Czy asystent podaje Twoją domenę jako źródło odpowiedzi. Własna strona rzadko bywa cytowana — jeśli jest, to mocny sygnał. Cel: żeby zaczęła być.">?</span>
-              <span id="visSite"></span></div></div></div>
+          <div id="visCtx" class="sub" style="margin:0 0 14px"></div>
+          <div class="kpis" id="visKpis"></div>
 
-          <div class="qhead"><span class="qstep">2</span><div><p class="qt">Kto zajmuje moje miejsce? <span class="hint" tabindex="0" data-tip="Lokale, które asystent wymienia na te same pytania klientów. To Twoja realna konkurencja w AI — niekoniecznie ta sama, co w Google. Liczba = w ilu odpowiedziach padła dana nazwa.">?</span></p><p class="qb">Lokale, które AI wymienia zamiast Ciebie. Twój podświetlony.</p></div></div>
-          <div class="card"><div class="pb"><div id="visRanking"></div></div></div>
+          <div class="qhead"><span class="qstep">1</span><div><p class="qt">Kto zajmuje moje miejsce? <span class="hint" tabindex="0" data-tip="Lokale, które asystent wymienia na te same pytania klientów — Twoja realna konkurencja w AI, niekoniecznie ta sama co w Google. Udział = w ilu wskazaniach padła dana nazwa, do wszystkich wskazań w kategorii.">?</span></p><p class="qb">Udział w rekomendacjach AI. Twój lokal podświetlony.</p></div></div>
+          <div class="card"><div class="pb"><div id="visRanking"></div><div class="vplat" id="visPlatforms" style="margin-top:14px"></div></div></div>
 
-          <div class="qhead"><span class="qstep">3</span><div><p class="qt">Co czyta AI, żeby odpowiedzieć? <span class="hint" tabindex="0" data-tip="Strony, z których asystent buduje odpowiedź o Twojej kategorii (blogi, przewodniki, mapy, social). Jeśli Cię tam nie ma, AI nie ma czym Cię polecić. Liczba = ile razy dana domena była cytowana.">?</span></p><p class="qb">Źródła, z których AI składa odpowiedzi. Tu trzeba być.</p></div></div>
-          <div class="card"><div class="pb"><div id="visSources"></div></div></div>
+          <div class="qhead"><span class="qstep">2</span><div><p class="qt">Co czyta AI, żeby odpowiedzieć? <span class="hint" tabindex="0" data-tip="Strony, z których asystent buduje odpowiedź o Twojej kategorii (własne strony lokali, przewodniki, mapy, social). Jeśli Twojej domeny tam nie ma, AI nie ma czym Cię polecić. Liczba = ile razy dana domena była cytowana.">?</span></p><p class="qb">Źródła odpowiedzi i czyja strona jest wśród nich.</p></div></div>
+          <div class="card"><div class="pb"><div id="visSrcInsight" style="margin-bottom:12px"></div><div id="visSources"></div></div></div>
+
+          <div id="visMeta" class="sub" style="margin-top:14px"></div>
         </div>
       </section>
 
@@ -434,41 +433,122 @@ function group(rows, keyFn) {
 }
 
 var PLAT = { chatgpt: 'ChatGPT', 'google-ai': 'Google AI', perplexity: 'Perplexity', gemini: 'Gemini' };
-function renderVis(rows) {
+
+/* pomocnicze do metryk widocznosci (liczone z istniejacych pomiarow) */
+function vnorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ''); }
+function vdomLabel(d) { var p = String(d || '').toLowerCase().replace(/^www\./, '').split('.'); return p.length >= 2 ? p[p.length - 2] : (p[0] || ''); }
+function vdate(d) { try { return new Date(d + 'T00:00:00Z').toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return d; } }
+var V_GUIDE = /tripadvisor|yelp|booking|wanderlog|foursquare|zomato|maps\.apple|maps\.google|(^|\.)google\.|krakow|gdziezjesc|przewodnik|trip\./i;
+var V_SOCIAL = /instagram|facebook|tiktok|youtube|reddit|pinterest/i;
+
+function renderVis(rows, site) {
   if (!rows.length) { show('visEmpty', true); $('visBody').classList.add('hidden'); return; }
   show('visEmpty', false); $('visBody').classList.remove('hidden');
 
+  site = site || {};
+  var siteKey = vnorm(site.name);
+  var siteDom = String(site.domain || '').toLowerCase().replace(/^www\./, '');
+  var siteLbl = vdomLabel(siteDom);
+
   var latest = {}; rows.forEach(function (r) { if (!latest[r.platform]) latest[r.platform] = r; });
   var plats = Object.keys(latest);
-
-  $('visPlatforms').innerHTML = plats.map(function (p) {
-    var r = latest[p];
-    var pres = r.presence_pct != null ? r.presence_pct + '%' : '—';
-    var rank = r.rank ? '#' + r.rank + (r.competitors ? '/' + r.competitors : '') : 'poza rankingiem';
-    return '<div class="vp"><div class="pn">' + esc(PLAT[p] || p) + '</div><div class="pv num">' + pres + '</div>' +
-      '<div class="pr num">' + rank + ' · ' + (r.hits || 0) + '/' + (r.questions || 0) + ' pytań · ' + esc(r.measured_on) + '</div></div>';
-  }).join('');
-
-  var citedIn = plats.filter(function (p) { return latest[p].own_site_cited === true; }).map(function (p) { return PLAT[p] || p; });
-  var anyKnown = plats.some(function (p) { return latest[p].own_site_cited != null; });
-  $('visSite').innerHTML = citedIn.length ? '<span class="flag yes">tak — ' + esc(citedIn.join(', ')) + '</span>'
-    : (anyKnown ? '<span class="flag no">jeszcze nie</span>' : '<span class="sub" style="margin:0">—</span>');
-
   var top = rows[0];
-  var rk = (top.ranking || []).slice(0, 8);
-  var rmax = Math.max.apply(null, rk.map(function (x) { return x[1]; }).concat([1]));
+
+  /* ---- metryki: agregat po najnowszym wierszu kazdej platformy ---- */
+  var ownHits = 0, allHits = 0, qTotal = 0, bestRank = null, bestComp = null, cited = false, citedKnown = false;
+  plats.forEach(function (p) {
+    var r = latest[p];
+    ownHits += r.hits || 0;
+    allHits += (r.ranking || []).reduce(function (a, x) { return a + (x[1] || 0); }, 0);
+    qTotal += r.questions || 0;
+    if (r.rank != null && (bestRank == null || r.rank < bestRank)) { bestRank = r.rank; bestComp = r.competitors; }
+    if (r.own_site_cited != null) { citedKnown = true; if (r.own_site_cited) cited = true; }
+  });
+  var sov = allHits ? ownHits / allHits : 0;
+  var rate = qTotal ? ownHits / qTotal : (top.presence_pct != null ? top.presence_pct / 100 : 0);
+
+  $('visCtx').innerHTML = plats.map(function (p) { return esc(PLAT[p] || p); }).join(' · ') +
+    ' · ' + esc(vdate(top.measured_on)) + ' · ' + qTotal + ' pytań' +
+    (top.note ? ' · <b style="font-weight:600">' + esc(top.note) + '</b>' : '');
+
+  function kpi(label, val, tip, cls, color) {
+    return '<div class="kpi' + (cls ? ' ' + cls : '') + '"><div class="kl">' + label +
+      ' <span class="hint" tabindex="0" data-tip="' + tip + '">?</span></div>' +
+      '<div class="kn num"' + (color ? ' style="color:' + color + '"' : '') + '>' + val + '</div></div>';
+  }
+  $('visKpis').innerHTML =
+    kpi('AI Share of Voice', Math.round(sov * 100) + '%',
+      'Twój udział we wszystkich wskazaniach lokali, jakie AI wymienia na pytania z Twojej kategorii. ' + ownHits + ' z ' + allHits + ' wskazań.', 'hi') +
+    kpi('Rekomendacje', Math.round(rate * 100) + '%',
+      'W ilu pytaniach klientów AI wymienia Twój lokal. ' + ownHits + ' z ' + qTotal + ' pytań.') +
+    kpi('Pozycja', bestRank ? ('#' + bestRank + (bestComp ? '<span style=\'font-size:16px;color:var(--muted-fg)\'>/' + bestComp + '</span>' : '')) : 'poza',
+      'Miejsce Twojego lokalu w rankingu kategorii wg AI, na ilu wymienianych graczy.') +
+    kpi('Twoja strona cytowana', citedKnown ? (cited ? 'Tak' : 'Nie') : '—',
+      'Czy AI podaje Twoją domenę (' + (siteDom || '—') + ') jako źródło. Rzadkie, ale to mocny sygnał — i najczęstsza luka.',
+      null, citedKnown ? (cited ? 'var(--positive)' : 'var(--critical)') : null);
+
+  /* pasek per-asystent tylko przy porownaniu >1 silnika */
+  if (plats.length > 1) {
+    $('visPlatforms').innerHTML = plats.map(function (p) {
+      var r = latest[p];
+      var pr = r.presence_pct != null ? r.presence_pct + '%' : '—';
+      var rk = r.rank ? '#' + r.rank + (r.competitors ? '/' + r.competitors : '') : 'poza';
+      return '<div class="vp"><div class="pn">' + esc(PLAT[p] || p) + '</div><div class="pv num">' + pr + '</div><div class="pr num">' + rk + ' · ' + (r.hits || 0) + '/' + (r.questions || 0) + '</div></div>';
+    }).join('');
+  } else { $('visPlatforms').innerHTML = ''; }
+
+  /* ---- Kto zajmuje moje miejsce: udzial w rekomendacjach ---- */
+  var rk = (top.ranking || []).slice(0, 10);
+  var rkSum = (top.ranking || []).reduce(function (a, x) { return a + (x[1] || 0); }, 0) || 1;
+  var rkMax = Math.max.apply(null, rk.map(function (x) { return x[1]; }).concat([1]));
   $('visRanking').innerHTML = rk.length ? rk.map(function (x, i) {
-    var self = (i + 1) === top.rank;
-    return '<div class="brow ' + (self ? 'self' : 'rest') + '"><span class="bl">' + (i + 1) + '. ' + esc(x[0]) + '</span>' +
-      '<span class="bt"><i style="width:' + Math.round(x[1] / rmax * 100) + '%"></i></span><b class="num">' + x[1] + '</b></div>';
+    var self = (vnorm(x[0]) === siteKey) || ((i + 1) === top.rank);
+    var share = Math.round((x[1] / rkSum) * 100);
+    return '<div class="brow ' + (self ? 'self' : 'rest') + '"><span class="bl">' + (i + 1) + '. ' + esc(x[0]) + (self ? ' <span class="pill">Ty</span>' : '') + '</span>' +
+      '<span class="bt"><i style="width:' + Math.round(x[1] / rkMax * 100) + '%"></i></span><b class="num">' + share + '%</b></div>';
   }).join('') : '<div class="empty">Brak rankingu.</div>';
 
-  var sr = (top.sources || []).slice(0, 8);
-  var smax = Math.max.apply(null, sr.map(function (x) { return x[1]; }).concat([1]));
+  /* ---- Source Authority: czyja strona jest zrodlem ---- */
+  function srcTag(dom) {
+    var d = String(dom || '').toLowerCase().replace(/^www\./, '');
+    if (siteDom && (d === siteDom || (siteLbl.length >= 4 && d.indexOf(siteLbl) >= 0))) return { t: 'Twoja', c: 'var(--positive)' };
+    var lbl = vdomLabel(d); var who = null;
+    (top.ranking || []).forEach(function (x) {
+      if (who) return; var toks = vnorm(x[0]);
+      if (lbl.length >= 4 && toks.length >= 4 && (toks.indexOf(lbl) >= 0 || lbl.indexOf(toks) >= 0)) who = x[0];
+    });
+    if (who) return { t: 'Konkurent', c: 'var(--critical)' };
+    if (V_SOCIAL.test(d)) return { t: 'Social', c: 'var(--muted-fg)' };
+    if (V_GUIDE.test(d)) return { t: 'Przewodnik', c: 'var(--muted-fg)' };
+    return { t: 'Inne', c: 'var(--muted-fg)' };
+  }
+  var sr = (top.sources || []).slice(0, 10);
+  var sMax = Math.max.apply(null, sr.map(function (x) { return x[1]; }).concat([1]));
+  var ownCited = (top.sources || []).some(function (x) { return srcTag(x[0]).t === 'Twoja'; });
+  var compSites = []; (top.sources || []).forEach(function (x) { if (srcTag(x[0]).t === 'Konkurent') compSites.push(x[0]); });
+  compSites = compSites.slice(0, 3);
+  var insight = '';
+  if (!ownCited && compSites.length) {
+    insight = '<div class="flag no" style="display:block;border-radius:11px;padding:11px 13px;font-weight:500;line-height:1.5">' +
+      '<b style="font-weight:600">AI ma z czego cytować konkurentów, ale nie Ciebie.</b> Wśród źródeł są ich własne strony (' + esc(compSites.join(', ')) +
+      '), a Twojej (' + esc(siteDom || '—') + ') brak. To najkonkretniejsza luka: daj AI stronę, którą może zacytować.</div>';
+  } else if (ownCited) {
+    insight = '<div class="flag yes" style="display:block;border-radius:11px;padding:11px 13px;font-weight:500;line-height:1.5">' +
+      '<b style="font-weight:600">Twoja domena jest wśród źródeł AI</b> (' + esc(siteDom) + ') — mocny sygnał. Utrzymaj i rozwijaj treści.</div>';
+  }
+  $('visSrcInsight').innerHTML = insight;
   $('visSources').innerHTML = sr.length ? sr.map(function (x) {
-    return '<div class="brow rest"><span class="bl">' + esc(x[0]) + '</span>' +
-      '<span class="bt"><i style="width:' + Math.round(x[1] / smax * 100) + '%"></i></span><b class="num">' + x[1] + '</b></div>';
+    var t = srcTag(x[0]);
+    return '<div class="brow rest"><span class="bl">' + esc(x[0]) + ' <span class="pill" style="color:' + t.c + ';border-color:color-mix(in oklch,' + t.c + ' 35%,transparent)">' + t.t + '</span></span>' +
+      '<span class="bt"><i style="width:' + Math.round(x[1] / sMax * 100) + '%"></i></span><b class="num">' + x[1] + '</b></div>';
   }).join('') : '<div class="empty">Brak danych o źródłach.</div>';
+
+  /* ---- stabilnosc / stopka ---- */
+  var dates = {}; rows.forEach(function (r) { dates[r.measured_on] = 1; });
+  var nd = Object.keys(dates).length;
+  $('visMeta').innerHTML = nd <= 1
+    ? 'Stabilność: 1 pomiar. Powtórz pomiar (kolejne uruchomienia i po 30/60/90 dniach), by policzyć zmienność wyniku i trend w czasie.'
+    : nd + ' pomiary — zmienność i trend liczone z powtórzeń w czasie.';
 }
 
 async function loadStats(id) {
@@ -478,7 +558,8 @@ async function loadStats(id) {
   var bt = await sb.from('stats_bot_hits').select('ts,bot,path').eq('website_id', id).gte('ts', since).order('ts', { ascending: false }).limit(2000);
   var botRows = bt.data || [];
   var ms = await sb.from('stats_measurements').select('platform,measured_on,presence_pct,hits,questions,rank,competitors,own_site_cited,ranking,sources,note').eq('website_id', id).order('measured_on', { ascending: false }).limit(50);
-  renderVis(ms.data || []);
+  var wq = await sb.from('stats_websites').select('name,domain').eq('id', id).maybeSingle();
+  renderVis(ms.data || [], wq.data || {});
 
   var rows = all.filter(function (r) { return r.type !== 'event'; });
   var events = all.filter(function (r) { return r.type === 'event'; });
