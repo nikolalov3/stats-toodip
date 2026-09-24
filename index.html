@@ -249,10 +249,10 @@
           <div class="kpis" id="visKpis"></div>
 
           <div class="qhead"><span class="qstep">1</span><div><p class="qt">Kto zajmuje moje miejsce? <span class="hint" tabindex="0" data-tip="Lokale, które asystent wymienia na te same pytania klientów — Twoja realna konkurencja w AI, niekoniecznie ta sama co w Google. Udział = w ilu wskazaniach padła dana nazwa, do wszystkich wskazań w kategorii.">?</span></p><p class="qb">Udział w rekomendacjach AI. Twój lokal podświetlony.</p></div></div>
-          <div class="card"><div class="pb"><div id="visRanking"></div><div class="vplat" id="visPlatforms" style="margin-top:14px"></div></div></div>
+          <div class="card"><div class="pb"><div id="visSov"></div><div class="vplat" id="visPlatforms" style="margin-top:14px"></div></div></div>
 
           <div class="qhead"><span class="qstep">2</span><div><p class="qt">Co czyta AI, żeby odpowiedzieć? <span class="hint" tabindex="0" data-tip="Strony, z których asystent buduje odpowiedź o Twojej kategorii (własne strony lokali, przewodniki, mapy, social). Jeśli Twojej domeny tam nie ma, AI nie ma czym Cię polecić. Liczba = ile razy dana domena była cytowana.">?</span></p><p class="qb">Źródła odpowiedzi i czyja strona jest wśród nich.</p></div></div>
-          <div class="card"><div class="pb"><div id="visSrcInsight" style="margin-bottom:12px"></div><div id="visSources"></div></div></div>
+          <div class="card"><div class="pb"><div id="visSrcInsight" style="margin-bottom:12px"></div><div id="visSrcChart" style="margin-bottom:16px"></div><div id="visSources"></div></div></div>
 
           <div id="visMeta" class="sub" style="margin-top:14px"></div>
         </div>
@@ -441,6 +441,34 @@ function vdate(d) { try { return new Date(d + 'T00:00:00Z').toLocaleDateString('
 var V_GUIDE = /tripadvisor|yelp|booking|wanderlog|foursquare|zomato|maps\.apple|maps\.google|(^|\.)google\.|krakow|gdziezjesc|przewodnik|trip\./i;
 var V_SOCIAL = /instagram|facebook|tiktok|youtube|reddit|pinterest/i;
 
+/* wykresy: donut (pierscien) + legenda, rysowane inline w SVG (bez bibliotek) */
+var VPAL = ['#60a5fa', '#38bdf8', '#34d399', '#a78bfa', '#fbbf24', '#fb7185', '#22d3ee', '#f97316'];
+function vdonut(segs, size, center) {
+  size = size || 156; var sw = Math.round(size * 0.15), r = size / 2 - sw / 2 - 2, cx = size / 2, cy = size / 2, C = 2 * Math.PI * r, off = 0;
+  var tot = segs.reduce(function (a, s) { return a + s.value; }, 0) || 1;
+  var arcs = segs.map(function (s) {
+    var len = C * (s.value / tot);
+    var el = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + s.color + '" stroke-width="' + sw + '" stroke-dasharray="' + len.toFixed(2) + ' ' + (C - len).toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')"/>';
+    off += len; return el;
+  }).join('');
+  var ctr = center ? ('<text x="' + cx + '" y="' + cy + '" text-anchor="middle" dominant-baseline="central" style="font-size:' + Math.round(size * 0.2) + 'px;font-weight:700;fill:currentColor">' + esc(center.big) + '</text>' +
+    (center.small ? '<text x="' + cx + '" y="' + (cy + size * 0.17) + '" text-anchor="middle" style="font-size:' + Math.round(size * 0.082) + 'px;fill:var(--muted-fg)">' + esc(center.small) + '</text>' : '')) : '';
+  return '<svg viewBox="0 0 ' + size + ' ' + size + '" width="' + size + '" height="' + size + '" style="flex:none">' +
+    '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="var(--muted)" stroke-width="' + sw + '"/>' + arcs + ctr + '</svg>';
+}
+function vlegend(segs) {
+  var tot = segs.reduce(function (a, x) { return a + x.value; }, 0) || 1;
+  return '<div style="flex:1;min-width:210px;display:flex;flex-direction:column;gap:1px">' + segs.map(function (s) {
+    return '<div style="display:flex;align-items:center;gap:9px;padding:3px 0;font-size:13px">' +
+      '<span style="width:10px;height:10px;border-radius:3px;background:' + s.color + ';flex:none"></span>' +
+      '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' + (s.self ? ';color:var(--brand);font-weight:600' : '') + '">' + (s.rankNo ? s.rankNo + '. ' : '') + esc(s.label) + (s.self ? ' <span class="pill">Ty</span>' : '') + '</span>' +
+      '<b class="num" style="font-size:13px">' + Math.round(s.value / tot * 100) + '%</b></div>';
+  }).join('') + '</div>';
+}
+function vchart(donutSvg, legendHtml) {
+  return '<div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap"><div style="flex:none">' + donutSvg + '</div>' + legendHtml + '</div>';
+}
+
 function renderVis(rows, site) {
   if (!rows.length) { show('visEmpty', true); $('visBody').classList.add('hidden'); return; }
   show('visEmpty', false); $('visBody').classList.remove('hidden');
@@ -497,16 +525,28 @@ function renderVis(rows, site) {
     }).join('');
   } else { $('visPlatforms').innerHTML = ''; }
 
-  /* ---- Kto zajmuje moje miejsce: udzial w rekomendacjach ---- */
-  var rk = (top.ranking || []).slice(0, 10);
-  var rkSum = (top.ranking || []).reduce(function (a, x) { return a + (x[1] || 0); }, 0) || 1;
-  var rkMax = Math.max.apply(null, rk.map(function (x) { return x[1]; }).concat([1]));
-  $('visRanking').innerHTML = rk.length ? rk.map(function (x, i) {
-    var self = (vnorm(x[0]) === siteKey) || ((i + 1) === top.rank);
-    var share = Math.round((x[1] / rkSum) * 100);
-    return '<div class="brow ' + (self ? 'self' : 'rest') + '"><span class="bl">' + (i + 1) + '. ' + esc(x[0]) + (self ? ' <span class="pill">Ty</span>' : '') + '</span>' +
-      '<span class="bt"><i style="width:' + Math.round(x[1] / rkMax * 100) + '%"></i></span><b class="num">' + share + '%</b></div>';
-  }).join('') : '<div class="empty">Brak rankingu.</div>';
+  /* ---- Kto zajmuje moje miejsce: donut udzialu w rekomendacjach ---- */
+  var ranking = top.ranking || [];
+  if (!ranking.length) {
+    $('visSov').innerHTML = '<div class="empty">Brak rankingu.</div>';
+  } else {
+    var N = 8;
+    var shown = ranking.slice(0, N);
+    var ownName = null; ranking.forEach(function (x) { if (vnorm(x[0]) === siteKey) ownName = x[0]; });
+    if (ownName && !shown.some(function (x) { return x[0] === ownName; })) {
+      shown = ranking.slice(0, N - 1).concat(ranking.filter(function (x) { return x[0] === ownName; }).slice(0, 1));
+    }
+    shown = shown.slice().sort(function (a, b) { return b[1] - a[1]; });
+    var shownSum = shown.reduce(function (a, x) { return a + x[1]; }, 0);
+    var rest = (ranking.reduce(function (a, x) { return a + (x[1] || 0); }, 0)) - shownSum;
+    var segs = shown.map(function (x, i) {
+      var self = vnorm(x[0]) === siteKey;
+      var rankNo = 0; ranking.forEach(function (y, j) { if (y[0] === x[0]) rankNo = j + 1; });
+      return { label: x[0], value: x[1], color: self ? 'var(--brand)' : VPAL[i % VPAL.length], self: self, rankNo: rankNo };
+    });
+    if (rest > 0) segs.push({ label: 'Reszta (' + (ranking.length - shown.length) + ')', value: rest, color: '#52525b' });
+    $('visSov').innerHTML = vchart(vdonut(segs, 156, { big: Math.round(sov * 100) + '%', small: 'Twój udział' }), vlegend(segs));
+  }
 
   /* ---- Source Authority: czyja strona jest zrodlem ---- */
   function srcTag(dom) {
@@ -537,6 +577,16 @@ function renderVis(rows, site) {
       '<b style="font-weight:600">Twoja domena jest wśród źródeł AI</b> (' + esc(siteDom) + ') — mocny sygnał. Utrzymaj i rozwijaj treści.</div>';
   }
   $('visSrcInsight').innerHTML = insight;
+
+  /* donut skladu zrodel wg typu (Twoja / Konkurent / Przewodnik / Social / Inne) */
+  var TYPE_ORDER = ['Twoja', 'Konkurent', 'Przewodnik', 'Social', 'Inne'];
+  var TYPE_COLOR = { Twoja: 'var(--positive)', Konkurent: 'var(--critical)', Przewodnik: '#60a5fa', Social: '#a78bfa', Inne: '#71717a' };
+  var typeSum = {}; (top.sources || []).forEach(function (x) { var t = srcTag(x[0]).t; typeSum[t] = (typeSum[t] || 0) + (x[1] || 0); });
+  var tsegs = TYPE_ORDER.filter(function (t) { return typeSum[t]; }).map(function (t) { return { label: t, value: typeSum[t], color: TYPE_COLOR[t] }; });
+  $('visSrcChart').innerHTML = tsegs.length
+    ? vchart(vdonut(tsegs, 140, { big: String((top.sources || []).length), small: 'źródeł' }), vlegend(tsegs))
+    : '';
+
   $('visSources').innerHTML = sr.length ? sr.map(function (x) {
     var t = srcTag(x[0]);
     return '<div class="brow rest"><span class="bl">' + esc(x[0]) + ' <span class="pill" style="color:' + t.c + ';border-color:color-mix(in oklch,' + t.c + ' 35%,transparent)">' + t.t + '</span></span>' +
