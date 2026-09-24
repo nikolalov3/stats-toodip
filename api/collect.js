@@ -1,9 +1,14 @@
 /* Vercel serverless: odbiera wejscie (page view) lub zdarzenie-pieniadz i zapisuje do Supabase.
    Klasyfikuje zrodlo ruchu (AI / wyszukiwarka / social / direct) po referrerze.
-   Unikalni: cookieless dzienny hash (IP+UA+dzien+strona) — nieodwracalny, bez PII.
+   Unikalni: pierwszy-party identyfikator z przegladarki (vid) — stabilny miedzy
+   dniami, bez PII; gdy go brak, fallback do dziennego hasha IP+UA.
    Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, (opc.) STATS_SALT */
 
 import crypto from 'crypto';
+
+/* Boty/crawlery/unfurlery nie sa ludzmi — nie licz ich jako odslon (sygnal 2,
+   czyli AI CZYTA strone, ma osobny tor: /api/bot + stats_bot_hits). */
+var BOT = /bot\b|crawler|spider|slurp|GPTBot|OAI-SearchBot|ChatGPT-User|PerplexityBot|Perplexity-User|ClaudeBot|Claude-Web|Anthropic|CCBot|Google-Extended|Googlebot|bingbot|Bytespider|Amazonbot|Applebot|facebookexternalhit|facebookcatalog|WhatsApp|TelegramBot|Slackbot|Discordbot|LinkedInBot|Twitterbot|SkypeUriPreview|Embedly|python-requests|node-fetch|axios|curl\/|wget|headlesschrome|phantomjs|puppeteer|playwright/i;
 
 var AI = {
   'chatgpt.com': 'ChatGPT', 'chat.openai.com': 'ChatGPT',
@@ -45,21 +50,42 @@ export default async function handler(req, res) {
   if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { data = null; } }
   if (!data || !data.id) return res.status(400).end();
 
-  var path = String(data.p || '/').slice(0, 512);
-  var params = {};
-  try { new URL('http://x' + path).searchParams.forEach(function (v, k) { params[k] = v; }); } catch (e) {}
-
   var ua = req.headers['user-agent'] || '';
   var isEvent = !!data.e;
+
+  /* Odrzuc boty/podglady (tylko odslony; zdarzenia-kliki przepuszczamy). 204,
+     zeby beacon nie widzial bledu. */
+  if (!isEvent && BOT.test(ua)) return res.status(204).end();
+
+  /* Sciezka: tylko realny pathname zaczynajacy sie od "/". Renderery data:/blob:
+     potrafia przyslac caly dokument jako "sciezke" — takie hity ignorujemy. */
+  var path = String(data.p || '/').slice(0, 512);
+  if (path.charAt(0) !== '/') return res.status(204).end();
+
+  /* utm/ref z query (wysylane osobno jako q) — pozwala wykryc otagowane linki. */
+  var params = {};
+  try {
+    new URLSearchParams(String(data.q || '').replace(/^\?/, '')).forEach(function (v, k) { params[k] = v; });
+  } catch (e) {}
+
   var cls = isEvent ? { source: null, ai: null } : classify(data.r, params);
 
-  /* cookieless dzienny odcisk: IP + UA + dzien + strona -> hash (bez zapisu IP) */
-  var ip = String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '').split(',')[0].trim();
-  var day = new Date().toISOString().slice(0, 10);
   var salt = process.env.STATS_SALT || 'toodip';
-  var visitor = crypto.createHash('sha256')
-    .update(String(data.id) + '|' + day + '|' + ip + '|' + ua + '|' + salt)
-    .digest('hex').slice(0, 24);
+  var visitor;
+  if (data.vid) {
+    /* trwaly, pierwszy-party identyfikator z przegladarki: ta sama osoba na tym
+       samym urzadzeniu = jeden unikalny, takze w kolejnych dniach. Bez IP. */
+    visitor = crypto.createHash('sha256')
+      .update(String(data.id) + '|v|' + String(data.vid).slice(0, 64) + '|' + salt)
+      .digest('hex').slice(0, 24);
+  } else {
+    /* fallback bez localStorage: dzienny odcisk IP+UA (resetuje sie co dzien). */
+    var ip = String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '').split(',')[0].trim();
+    var day = new Date().toISOString().slice(0, 10);
+    visitor = crypto.createHash('sha256')
+      .update(String(data.id) + '|' + day + '|' + ip + '|' + ua + '|' + salt)
+      .digest('hex').slice(0, 24);
+  }
 
   var row = {
     website_id: String(data.id),

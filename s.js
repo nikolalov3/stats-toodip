@@ -12,16 +12,41 @@
   var id = el && el.getAttribute('data-id');
   if (!id) return;
 
+  /* Licz tylko realne strony http(s). Podglady linkow i renderery AI/botow
+     wczytuja HTML jako data:/blob:/about: — location.pathname jest wtedy calym
+     dokumentem, co smiecilo liste stron. Takie odslony pomijamy. */
+  if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+
   /* host = skad zaladowano ten skrypt (dziala na dowolnej domenie, .pl/.com/…) */
   var host = el.getAttribute('data-host');
   if (!host && el.src) { try { host = new URL(el.src).origin; } catch (e) {} }
   host = (host || 'https://stats.toodip.com').replace(/\/+$/, '');
   var endpoint = host + '/api/collect';
 
+  /* Trwaly, pierwszy-party identyfikator odwiedzajacego: losowy, bez zadnych
+     danych osobowych, trzymany w localStorage TEJ strony (osobny per domena,
+     wiec nie da sie sledzic miedzy witrynami). Dzieki niemu ta sama osoba na
+     tym samym urzadzeniu nie liczy sie drugi raz w kolejnym dniu. Gdy
+     localStorage jest niedostepny, serwer wraca do dziennego hasha IP+UA. */
+  function vid() {
+    try {
+      var k = 'tdp_vid', v = localStorage.getItem(k);
+      if (!v) {
+        v = (window.crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : (Date.now().toString(16) + Math.random().toString(16).slice(2, 10));
+        localStorage.setItem(k, v);
+      }
+      return v;
+    } catch (e) { return ''; }
+  }
+
   function send(extra) {
     var payload = {
       id: id,
       p: location.pathname,
+      q: location.search || '',            // query osobno: pozwala wykryc otagowane linki (utm_source=chatgpt)
+      vid: vid(),                          // trwaly identyfikator (unikalni miedzy dniami)
       r: document.referrer || '',
       t: (document.title || '').slice(0, 200),
       l: (navigator.language || document.documentElement.lang || '').slice(0, 10)
