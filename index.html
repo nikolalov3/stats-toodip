@@ -717,15 +717,31 @@ async function loadStats(id) {
   function TX(i) { return dkeys.length <= 1 ? padL + iw / 2 : padL + iw * i / (dkeys.length - 1); }
   function TY(v) { return padT + ih * (1 - v / vmax); }
   function tpath(vals) { return vals.map(function (v, i) { return (i ? 'L' : 'M') + TX(i).toFixed(1) + ' ' + TY(v).toFixed(1); }).join(' '); }
-  function tdots(vals, color) { return vals.map(function (v, i) { return '<circle cx="' + TX(i).toFixed(1) + '" cy="' + TY(v).toFixed(1) + '" r="2.6" fill="' + color + '" vector-effect="non-scaling-stroke"><title>' + dkeys[i] + ': ' + days[dkeys[i]].t + ' (z AI ' + days[dkeys[i]].a + ')</title></circle>'; }).join(''); }
+  function tdots(vals, color) { return vals.map(function (v, i) { return '<circle cx="' + TX(i).toFixed(1) + '" cy="' + TY(v).toFixed(1) + '" r="2.6" fill="' + color + '" vector-effect="non-scaling-stroke"/>'; }).join(''); }
   var AI_C = 'var(--brand)', REST_C = 'var(--rest)';
   var tgrid = [0, 0.5, 1].map(function (f) { var y = (padT + ih * (1 - f)).toFixed(1); return '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y + '" y2="' + y + '" stroke="var(--border)" stroke-width="1" vector-effect="non-scaling-stroke"/>'; }).join('');
   var txl = dkeys.map(function (k, i) { return (i % 3 === (dkeys.length - 1) % 3) ? '<text x="' + TX(i).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle" style="font-size:9px;fill:var(--muted-fg)">' + k.slice(5) + '</text>' : ''; }).join('');
+  /* dane + pozycje kropek do tooltipa (procentowo, bo SVG jest rozciagany) */
+  window.__trend = dkeys.map(function (k, i) {
+    return { d: k, t: days[k].t, a: days[k].a, l: TX(i) / W * 100, top: Math.min(TY(aiV[i]), TY(restV[i])) / H * 100 };
+  });
+  var bandW = dkeys.length > 1 ? iw / (dkeys.length - 1) : iw;
+  var thits = dkeys.map(function (k, i) { return '<rect x="' + (TX(i) - bandW / 2).toFixed(1) + '" y="0" width="' + bandW.toFixed(1) + '" height="' + H + '" fill="transparent" onmouseover="trendTip(' + i + ')" onmouseout="trendHide()"/>'; }).join('');
+  $('trend').style.position = 'relative';
   $('trend').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '" preserveAspectRatio="none" style="display:block">' +
     tgrid +
     '<path d="' + tpath(restV) + '" fill="none" stroke="' + REST_C + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
     '<path d="' + tpath(aiV) + '" fill="none" stroke="' + AI_C + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
-    tdots(restV, REST_C) + tdots(aiV, AI_C) + txl + '</svg>';
+    tdots(restV, REST_C) + tdots(aiV, AI_C) + txl + thits + '</svg>' +
+    '<div id="trendTip" style="position:absolute;display:none;transform:translate(-50%,-118%);background:var(--card);border:1px solid var(--border);border-radius:4px;padding:7px 9px;font-size:12px;line-height:1.5;white-space:nowrap;box-shadow:var(--shadow-lg);pointer-events:none;z-index:5"></div>';
+  window.trendTip = function (i) {
+    var p = window.__trend[i], el = document.getElementById('trendTip'); if (!el || !p) return;
+    el.innerHTML = '<div style="font-weight:600;margin-bottom:2px">' + p.d + '</div>' +
+      'Odsłony: <b class="num">' + p.t + '</b><br>' +
+      '<span style="color:var(--brand)">z AI: <b class="num">' + p.a + '</b></span> · reszta: <b class="num">' + (p.t - p.a) + '</b>';
+    el.style.left = Math.max(7, Math.min(93, p.l)) + '%'; el.style.top = p.top + '%'; el.style.display = 'block';
+  };
+  window.trendHide = function () { var el = document.getElementById('trendTip'); if (el) el.style.display = 'none'; };
 
   bars('aiBreak', group(rows.filter(function (r) { return r.source === 'ai'; }), function (r) { return r.ai_name || 'AI'; }),
     { empty: 'Jeszcze zero. Gdy ChatGPT/Perplexity/Gemini zaczną odsyłać, pojawią się tu.' });
