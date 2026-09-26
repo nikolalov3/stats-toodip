@@ -74,6 +74,9 @@ create table if not exists public.stats_measurements (
   created_at timestamptz not null default now(),
   unique (website_id, platform, measured_on)
 );
+-- Source Authority: kto rzadzi zrodlami (wspolwystepowanie zrodlo<->lokal),
+-- liczone z surowych odpowiedzi przez stats_push.py. { authority, gap, own, own_in }.
+alter table public.stats_measurements add column if not exists source_authority jsonb;
 alter table public.stats_measurements enable row level security;
 drop policy if exists "stats_meas read own" on public.stats_measurements;
 create policy "stats_meas read own" on public.stats_measurements

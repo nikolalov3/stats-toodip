@@ -234,7 +234,7 @@
 
         <div class="qhead"><span class="qstep">1</span><div><p class="qt">Ile ludzi i skąd? <span class="hint" tabindex="0" data-tip="Odsłony dzień po dniu, ostatnie 14 dni. Zielony/niebieski segment słupka = wejścia z AI, szary = cała reszta.">?</span></p><p class="qb">Odsłony dzień po dniu. Niebieskie = z AI, szare = reszta.</p></div></div>
         <div class="card"><div class="pb"><div class="trend" id="trend"></div>
-          <div class="legend"><span><i style="background:var(--brand)"></i>z AI</span><span><i style="background:var(--muted)"></i>reszta</span></div></div></div>
+          <div class="legend"><span><i style="background:var(--brand)"></i>z AI</span><span><i style="background:var(--rest)"></i>reszta</span></div></div></div>
 
         <div class="qhead"><span class="qstep">2</span><div><p class="qt">Które strony ogląda ruch? <span class="hint" tabindex="0" data-tip="Najczęściej otwierane adresy w Twojej witrynie w ostatnich 30 dniach. Pokazuje, która treść przyciąga uwagę.">?</span></p><p class="qb">Najczęściej otwierane podstrony (30 dni).</p></div></div>
         <div class="card"><div class="pb"><div id="pages"></div></div></div>
@@ -253,6 +253,11 @@
 
           <div class="qhead"><span class="qstep">2</span><div><p class="qt">Co czyta AI, żeby odpowiedzieć? <span class="hint" tabindex="0" data-tip="Strony, z których asystent buduje odpowiedź o Twojej kategorii (własne strony lokali, przewodniki, mapy, social). Jeśli Twojej domeny tam nie ma, AI nie ma czym Cię polecić. Liczba = ile razy dana domena była cytowana.">?</span></p><p class="qb">Źródła odpowiedzi i czyja strona jest wśród nich.</p></div></div>
           <div class="card"><div class="pb"><div id="visSrcInsight" style="margin-bottom:12px"></div><div id="visSrcChart" style="margin-bottom:16px"></div><div id="visSources"></div></div></div>
+
+          <div id="visAuthWrap" class="hidden">
+            <div class="qhead"><span class="qstep">3</span><div><p class="qt">Które źródła robią rekomendacje? <span class="hint" tabindex="0" data-tip="Nie „ile razy domena cytowana", tylko z KIM współwystępuje. Autorytatywne = towarzyszą liderom kategorii. Luka = robią rekomendacje konkurentom, a Twojego lokalu przy nich nie ma. Liczone z surowych odpowiedzi AI.">?</span></p><p class="qb">Domeny, które towarzyszą polecanym lokalom — i gdzie Ciebie brakuje.</p></div></div>
+            <div class="card"><div class="pb"><div id="visAuthority"></div></div></div>
+          </div>
 
           <div id="visMeta" class="sub" style="margin-top:14px"></div>
         </div>
@@ -606,6 +611,30 @@ function renderVis(rows, site) {
       '<b class="num" style="font-size:13px;text-align:right">' + x[1] + '</b></div>';
   }).join('')) : '<div class="empty">Brak danych o źródłach.</div>';
 
+  /* ---- Source Authority: kto rzadzi zrodlami (z surowych odpowiedzi) ---- */
+  var sa = top.source_authority;
+  if (sa && ((sa.authority && sa.authority.length) || (sa.gap && sa.gap.length) || (sa.own && sa.own.length))) {
+    $('visAuthWrap').classList.remove('hidden');
+    function authList(title, color, items) {
+      if (!items || !items.length) return '';
+      return '<div style="flex:1;min-width:220px"><div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:' + color + ';margin-bottom:6px">' + title + '</div>' +
+        items.slice(0, 6).map(function (it) {
+          return '<div style="display:flex;align-items:baseline;gap:8px;padding:5px 0;border-top:1px solid var(--border)">' +
+            '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(it.d) + '">' + esc(it.d) + '</span>' +
+            '<span style="font-size:11.5px;color:var(--muted-fg);white-space:nowrap">' + esc(it.note) + '</span></div>';
+        }).join('') + '</div>';
+    }
+    var A = (sa.authority || []).map(function (x) { return { d: x[0], note: 'w ' + x[1] + ' odp.' }; });
+    var G = (sa.gap || []).map(function (x) { return { d: x[0], note: x[1] + ' rywali · Ty 0' }; });
+    var O = (sa.own || []).map(function (x) { return { d: x[0], note: 'przy Tobie ' + x[1] + '×' }; });
+    $('visAuthority').innerHTML = '<div style="display:flex;gap:26px;flex-wrap:wrap">' +
+      authList('Autorytatywne — przy liderach', '#3b82f6', A) +
+      authList('Twoja luka — wspiera rywali, nie Ciebie', 'var(--critical)', G) +
+      authList('Twoje źródła — przy Tobie', 'var(--positive)', O) + '</div>';
+  } else {
+    $('visAuthWrap').classList.add('hidden');
+  }
+
   /* ---- stabilnosc / stopka ---- */
   var dates = {}; rows.forEach(function (r) { dates[r.measured_on] = 1; });
   var nd = Object.keys(dates).length;
@@ -622,7 +651,14 @@ async function loadStats(id) {
   var botRows = bt.data || [];
   var ms = await sb.from('stats_measurements').select('platform,measured_on,presence_pct,hits,questions,rank,competitors,own_site_cited,ranking,sources,note').eq('website_id', id).order('measured_on', { ascending: false }).limit(50);
   var wq = await sb.from('stats_websites').select('name,domain').eq('id', id).maybeSingle();
-  renderVis(ms.data || [], wq.data || {});
+  var msRows = ms.data || [];
+  /* source_authority w osobnym zapytaniu — gdy kolumny jeszcze nie ma, po prostu pomijamy (panel dziala dalej) */
+  var saRes = await sb.from('stats_measurements').select('platform,measured_on,source_authority').eq('website_id', id).limit(50);
+  if (saRes && saRes.data) {
+    var saMap = {}; saRes.data.forEach(function (r) { saMap[r.platform + '|' + r.measured_on] = r.source_authority; });
+    msRows.forEach(function (r) { r.source_authority = saMap[r.platform + '|' + r.measured_on] || null; });
+  }
+  renderVis(msRows, wq.data || {});
 
   var rows = all.filter(function (r) { return r.type !== 'event'; });
   var events = all.filter(function (r) { return r.type === 'event'; });
@@ -643,13 +679,24 @@ async function loadStats(id) {
   $('kPct').textContent = (rows.length ? Math.round(ai30 / rows.length * 100) : 0) + '%';
   $('kConv').textContent = events.length;
 
-  var dvals = Object.keys(days).map(function (k) { return days[k].t; });
-  var dmax = Math.max(1, Math.max.apply(null, dvals));
-  $('trend').innerHTML = Object.keys(days).map(function (k) {
-    var d = days[k]; var hTotal = Math.round(d.t / dmax * 100); var hAi = d.t ? Math.round(d.a / d.t * 100) : 0;
-    return '<div class="tcol"><div class="tbar" title="' + k + ': ' + d.t + ' (z AI ' + d.a + ')" style="height:' + hTotal + '%">' +
-      '<div class="tai" style="height:' + hAi + '%"></div></div></div>';
-  }).join('');
+  /* trend jako wykres liniowy: dwie kolorowane linie (z AI / reszta), punkt na dzien */
+  var dkeys = Object.keys(days);
+  var aiV = dkeys.map(function (k) { return days[k].a; });
+  var restV = dkeys.map(function (k) { return days[k].t - days[k].a; });
+  var vmax = Math.max(1, Math.max.apply(null, dkeys.map(function (k) { return days[k].t; })));
+  var W = 720, H = 132, padL = 6, padR = 6, padT = 12, padB = 20, iw = W - padL - padR, ih = H - padT - padB;
+  function TX(i) { return dkeys.length <= 1 ? padL + iw / 2 : padL + iw * i / (dkeys.length - 1); }
+  function TY(v) { return padT + ih * (1 - v / vmax); }
+  function tpath(vals) { return vals.map(function (v, i) { return (i ? 'L' : 'M') + TX(i).toFixed(1) + ' ' + TY(v).toFixed(1); }).join(' '); }
+  function tdots(vals, color) { return vals.map(function (v, i) { return '<circle cx="' + TX(i).toFixed(1) + '" cy="' + TY(v).toFixed(1) + '" r="2.6" fill="' + color + '" vector-effect="non-scaling-stroke"><title>' + dkeys[i] + ': ' + days[dkeys[i]].t + ' (z AI ' + days[dkeys[i]].a + ')</title></circle>'; }).join(''); }
+  var AI_C = 'var(--brand)', REST_C = 'var(--rest)';
+  var tgrid = [0, 0.5, 1].map(function (f) { var y = (padT + ih * (1 - f)).toFixed(1); return '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y + '" y2="' + y + '" stroke="var(--border)" stroke-width="1" vector-effect="non-scaling-stroke"/>'; }).join('');
+  var txl = dkeys.map(function (k, i) { return (i % 3 === (dkeys.length - 1) % 3) ? '<text x="' + TX(i).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle" style="font-size:9px;fill:var(--muted-fg)">' + k.slice(5) + '</text>' : ''; }).join('');
+  $('trend').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '" preserveAspectRatio="none" style="display:block">' +
+    tgrid +
+    '<path d="' + tpath(restV) + '" fill="none" stroke="' + REST_C + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+    '<path d="' + tpath(aiV) + '" fill="none" stroke="' + AI_C + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+    tdots(restV, REST_C) + tdots(aiV, AI_C) + txl + '</svg>';
 
   bars('aiBreak', group(rows.filter(function (r) { return r.source === 'ai'; }), function (r) { return r.ai_name || 'AI'; }),
     { empty: 'Jeszcze zero. Gdy ChatGPT/Perplexity/Gemini zaczną odsyłać, pojawią się tu.' });
