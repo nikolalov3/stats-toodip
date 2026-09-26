@@ -611,26 +611,39 @@ function renderVis(rows, site) {
       '<b class="num" style="font-size:13px;text-align:right">' + x[1] + '</b></div>';
   }).join('')) : '<div class="empty">Brak danych o źródłach.</div>';
 
-  /* ---- Source Authority: kto rzadzi zrodlami (z surowych odpowiedzi) ---- */
+  /* ---- Source Authority: atrybucja per-lokal (czym AI opisuje kogo) ---- */
   var sa = top.source_authority;
-  if (sa && ((sa.authority && sa.authority.length) || (sa.gap && sa.gap.length) || (sa.own && sa.own.length))) {
+  if (sa && ((sa.own_sources && sa.own_sources.length) || (sa.leaders && sa.leaders.length) || (sa.gap && sa.gap.length))) {
     $('visAuthWrap').classList.remove('hidden');
-    function authList(title, color, items) {
-      if (!items || !items.length) return '';
-      return '<div style="flex:1;min-width:220px"><div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:' + color + ';margin-bottom:6px">' + title + '</div>' +
-        items.slice(0, 6).map(function (it) {
-          return '<div style="display:flex;align-items:baseline;gap:8px;padding:5px 0;border-top:1px solid var(--border)">' +
-            '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(it.d) + '">' + esc(it.d) + '</span>' +
-            '<span style="font-size:11.5px;color:var(--muted-fg);white-space:nowrap">' + esc(it.note) + '</span></div>';
-        }).join('') + '</div>';
+    function saHead(t, c) { return '<div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:' + c + ';margin-bottom:6px">' + t + '</div>'; }
+    function saRows(items) {
+      return items.map(function (it) {
+        return '<div style="display:flex;align-items:baseline;gap:8px;padding:5px 0;border-top:1px solid var(--border)">' +
+          '<span style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(it.d) + '">' + esc(it.d) + '</span>' +
+          '<span style="font-size:11.5px;color:var(--muted-fg);white-space:nowrap">' + esc(it.note) + '</span></div>';
+      }).join('');
     }
-    var A = (sa.authority || []).map(function (x) { return { d: x[0], note: 'w ' + x[1] + ' odp.' }; });
-    var G = (sa.gap || []).map(function (x) { return { d: x[0], note: x[1] + ' rywali · Ty 0' }; });
-    var O = (sa.own || []).map(function (x) { return { d: x[0], note: 'przy Tobie ' + x[1] + '×' }; });
-    $('visAuthority').innerHTML = '<div style="display:flex;gap:26px;flex-wrap:wrap">' +
-      authList('Autorytatywne — przy liderach', '#3b82f6', A) +
-      authList('Twoja luka — wspiera rywali, nie Ciebie', 'var(--critical)', G) +
-      authList('Twoje źródła — przy Tobie', 'var(--positive)', O) + '</div>';
+    function isOwnSite(name, dom) { var lbl = vdomLabel(dom), k = vnorm(name); return lbl.length >= 4 && k.length >= 4 && (k.indexOf(lbl) >= 0 || lbl.indexOf(k) >= 0); }
+
+    var ownItems = (sa.own_sources || []).slice(0, 6).map(function (x) { return { d: x[0], note: x[1] + '×' }; });
+    if (!ownItems.length) ownItems = [{ d: '—', note: 'brak' }];
+    var ownFlag = sa.own_has_site
+      ? '<div style="margin-top:9px;font-size:12px;color:var(--positive)">✓ Twoja strona (' + esc(siteDom) + ') jest wśród źródeł.</div>'
+      : '<div style="margin-top:9px;font-size:12px;color:var(--critical)">✗ Twojej strony (' + esc(siteDom || '—') + ') AI nie cytuje — opisują Cię cudze.</div>';
+    var leadItems = (sa.leaders || []).map(function (L) {
+      var d0 = (L[1] || [])[0];
+      if (!d0) return { d: L[0], note: '—' };
+      return { d: L[0], note: d0[0] + (isOwnSite(L[0], d0[0]) ? ' · własna' : '') };
+    });
+    var gapItems = (sa.gap || []).slice(0, 6).map(function (x) { return { d: x[0], note: x[1] + ' rywali' }; });
+
+    $('visAuthority').innerHTML =
+      '<div style="display:flex;gap:26px;flex-wrap:wrap">' +
+      '<div style="flex:1;min-width:240px">' + saHead('Czym AI opisuje Ciebie', '#3b82f6') + saRows(ownItems) + ownFlag + '</div>' +
+      '<div style="flex:1;min-width:240px">' + saHead('Jak opisują się liderzy', 'var(--positive)') + saRows(leadItems) +
+      '<div style="margin-top:9px;font-size:12px;color:var(--muted-fg)">Liderzy cytowani głównie z własnych stron — Ty nie.</div></div>' +
+      '</div>' +
+      (gapItems.length ? '<div style="margin-top:16px">' + saHead('Źródła, które opisują rywali, nie Ciebie', 'var(--critical)') + saRows(gapItems) + '</div>' : '');
   } else {
     $('visAuthWrap').classList.add('hidden');
   }
