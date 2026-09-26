@@ -45,14 +45,14 @@
 
   /* ---------- login ---------- */
   .authwrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
-  .authcard{width:100%;max-width:380px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:var(--shadow-lg)}
+  .authcard{width:100%;max-width:380px;background:var(--card);border:1px solid var(--border);border-radius:4px;padding:28px;box-shadow:var(--shadow-lg)}
   .logo{display:flex;align-items:center;gap:8px;font-weight:600;font-size:16px;letter-spacing:-.01em}
   .logo .dot{width:9px;height:9px;border-radius:3px;background:var(--brand)}
   h1{font-size:18px;font-weight:600;letter-spacing:-.01em;margin:0}
   label{display:block;font-size:12px;color:var(--muted-fg);margin:14px 0 6px;font-weight:500}
-  input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--fg);padding:10px 12px;font:inherit}
+  input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--fg);padding:10px 12px;font:inherit}
   input:focus{outline:2px solid var(--brand);outline-offset:-1px;border-color:var(--brand)}
-  button{font:inherit;cursor:pointer;border-radius:9px;border:1px solid transparent;padding:9px 14px;font-weight:500}
+  button{font:inherit;cursor:pointer;border-radius:4px;border:1px solid transparent;padding:9px 14px;font-weight:500}
   .btn{background:var(--brand);color:var(--brand-fg);font-weight:600}
   .btn.ghost{background:transparent;color:var(--fg);border-color:var(--border)}
   .btn.sm{padding:6px 11px;font-size:13px}
@@ -66,11 +66,11 @@
   .side{position:sticky;top:0;height:100vh;background:var(--sidebar);border-right:1px solid var(--border);
     display:flex;flex-direction:column;padding:16px 12px;gap:4px}
   .side .brand{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;font-weight:600;letter-spacing:-.01em}
-  .sitechip{display:flex;flex-direction:column;gap:1px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:8px}
+  .sitechip{display:flex;flex-direction:column;gap:1px;background:var(--card);border:1px solid var(--border);border-radius:4px;padding:9px 11px;margin-bottom:8px}
   .sitechip .nm{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .sitechip .dm{font-size:11.5px;color:var(--muted-fg)}
   nav{display:flex;flex-direction:column;gap:2px;flex:1}
-  .nav{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--fg);
+  .nav{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:4px;color:var(--fg);
     background:transparent;border:0;text-align:left;font-size:13.5px;font-weight:500;width:100%;transition:background .12s}
   .nav:hover{background:var(--sidebar-accent)}
   .nav.active{background:var(--brand-soft);color:var(--brand);font-weight:600}
@@ -85,7 +85,7 @@
   .topbar .psub{color:var(--muted-fg);font-size:13px;margin-top:3px;max-width:640px}
 
   /* ---------- cards / panels ---------- */
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:4px;box-shadow:var(--shadow)}
   .card+.card,.grid+.card,.card+.grid,.grid+.grid{margin-top:14px}
   .ph{display:flex;align-items:center;gap:7px;padding:15px 18px 0}
   .ph h2{font-size:14px;font-weight:600;margin:0;letter-spacing:-.01em}
@@ -104,7 +104,7 @@
 
   /* ---------- KPI ---------- */
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-  .kpi{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:15px 16px;box-shadow:var(--shadow)}
   .kpi .kl{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted-fg);font-weight:500}
   .kpi .kn{font-size:27px;font-weight:600;letter-spacing:-.02em;margin-top:7px}
   .kpi.hi .kn{color:var(--brand)}
@@ -118,7 +118,7 @@
   .legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
 
   /* ---------- bar rows ---------- */
-  .brow{display:grid;grid-template-columns:minmax(90px,auto) 1fr 60px;gap:11px;align-items:center;padding:6px 0}
+  .brow{display:grid;grid-template-columns:minmax(90px,auto) 1fr 92px;gap:11px;align-items:center;padding:6px 0}
   .brow .bl{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .brow .bt{background:var(--muted);border-radius:5px;height:8px;overflow:hidden}
   .brow .bt i{display:block;height:100%;background:var(--brand);border-radius:5px}
@@ -129,27 +129,27 @@
 
   /* ---------- visibility tiles ---------- */
   .vplat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px}
-  .vp{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .vp{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:14px}
   .vp .pn{font-size:11px;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
   .vp .pv{font-size:25px;font-weight:600;margin-top:6px;letter-spacing:-.02em}
   .vp .pr{font-size:12px;color:var(--muted-fg);margin-top:3px}
-  .flag{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;border-radius:999px;padding:3px 11px;border:1px solid}
+  .flag{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;border-radius:4px;padding:3px 11px;border:1px solid}
   .flag.no{color:var(--critical);border-color:color-mix(in oklch,var(--critical) 35%,transparent);background:var(--critical-soft)}
   .flag.yes{color:var(--positive);border-color:color-mix(in oklch,var(--positive) 40%,transparent);background:var(--positive-soft)}
 
-  .pill{display:inline-block;font-size:11px;color:var(--muted-fg);border:1px solid var(--border);border-radius:999px;padding:1px 8px;margin-left:6px;font-weight:500}
+  .pill{display:inline-block;font-size:11px;color:var(--muted-fg);border:1px solid var(--border);border-radius:4px;padding:1px 8px;margin-left:6px;font-weight:500}
   #visAuthority details>summary{list-style:none;cursor:pointer}
   #visAuthority details>summary::-webkit-details-marker{display:none}
   #visAuthority .chev{display:inline-block;transition:transform .15s;color:var(--muted-fg);font-size:10px}
   #visAuthority details[open] .chev{transform:rotate(180deg)}
-  .snippet{display:block;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-all;font-family:"Geist Mono",ui-monospace,monospace;font-size:12.5px}
+  .snippet{display:block;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:12px;white-space:pre-wrap;word-break:break-all;font-family:"Geist Mono",ui-monospace,monospace;font-size:12.5px}
 
   /* ---------- hint (?) ---------- */
   .hint{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;
     border:1px solid var(--border);color:var(--muted-fg);font-size:10px;font-weight:700;cursor:help;flex:none;line-height:1}
   .hint:hover,.hint:focus{border-color:var(--brand);color:var(--brand);outline:none}
   #tip{position:fixed;z-index:50;max-width:280px;background:var(--fg);color:var(--bg);font-size:12px;line-height:1.5;
-    padding:9px 11px;border-radius:9px;box-shadow:var(--shadow-lg);pointer-events:none}
+    padding:9px 11px;border-radius:4px;box-shadow:var(--shadow-lg);pointer-events:none}
 
   /* ---------- responsive ---------- */
   @media(max-width:860px){
@@ -431,9 +431,11 @@ function bars(container, items, opts) {
   var max = Math.max.apply(null, items.map(function (i) { return i.v; })) || 1;
   var tot = items.reduce(function (a, i) { return a + i.v; }, 0) || 1;
   $(container).innerHTML = items.map(function (i) {
-    var pct = opts.pct ? ' ' + Math.round(i.v / tot * 100) + '%' : '';
+    var val = opts.pct
+      ? i.v + ' <span style="color:var(--muted-fg);font-weight:500">· ' + Math.round(i.v / tot * 100) + '%</span>'
+      : String(i.v);
     return '<div class="brow ' + (opts.rest ? 'rest' : '') + '"><span class="bl">' + esc(i.k) + '</span>' +
-      '<span class="bt"><i style="width:' + Math.round(i.v / max * 100) + '%"></i></span><b class="num">' + i.v + pct + '</b></div>';
+      '<span class="bt"><i style="width:' + Math.round(i.v / max * 100) + '%"></i></span><b class="num">' + val + '</b></div>';
   }).join('');
 }
 function group(rows, keyFn) {
@@ -584,11 +586,11 @@ function renderVis(rows, site) {
   compSites = compSites.slice(0, 3);
   var insight = '';
   if (!ownCited && compSites.length) {
-    insight = '<div class="flag no" style="display:block;border-radius:11px;padding:11px 13px;font-weight:500;line-height:1.5">' +
+    insight = '<div class="flag no" style="display:block;border-radius:4px;padding:11px 13px;font-weight:500;line-height:1.5">' +
       '<b style="font-weight:600">AI ma z czego cytować konkurentów, ale nie Ciebie.</b> Wśród źródeł są ich własne strony (' + esc(compSites.join(', ')) +
       '), a Twojej (' + esc(siteDom || '—') + ') brak. To najkonkretniejsza luka: daj AI stronę, którą może zacytować.</div>';
   } else if (ownCited) {
-    insight = '<div class="flag yes" style="display:block;border-radius:11px;padding:11px 13px;font-weight:500;line-height:1.5">' +
+    insight = '<div class="flag yes" style="display:block;border-radius:4px;padding:11px 13px;font-weight:500;line-height:1.5">' +
       '<b style="font-weight:600">Twoja domena jest wśród źródeł AI</b> (' + esc(siteDom) + ') — mocny sygnał. Utrzymaj i rozwijaj treści.</div>';
   }
   $('visSrcInsight').innerHTML = insight;
@@ -607,7 +609,7 @@ function renderVis(rows, site) {
   $('visSources').innerHTML = sr.length ? (srcHead + sr.map(function (x) {
     var t = srcTag(x[0]);
     var chip = '<span style="display:inline-block;font-size:11px;font-weight:600;line-height:1.5;color:' + t.c +
-      ';border:1px solid color-mix(in oklch,' + t.c + ' 38%,transparent);background:color-mix(in oklch,' + t.c + ' 13%,transparent);border-radius:999px;padding:1px 9px">' + t.t + '</span>';
+      ';border:1px solid color-mix(in oklch,' + t.c + ' 38%,transparent);background:color-mix(in oklch,' + t.c + ' 13%,transparent);border-radius:4px;padding:1px 9px">' + t.t + '</span>';
     return '<div style="' + srcCols + ';padding:8px 0;border-top:1px solid var(--border)">' +
       '<span style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(x[0]) + '">' + esc(x[0]) + '</span>' +
       '<span>' + chip + '</span>' +
