@@ -292,6 +292,8 @@
       <section data-panel="conversions" hidden>
         <div class="qhead"><span class="qstep">1</span><div><p class="qt">Co robi ruch na stronie? <span class="hint" tabindex="0" data-tip="Zdarzenia-pieniądze: kliknięcia w telefon, dojazd (mapy), Instagram, Facebook, rezerwację. Skrypt łapie je automatycznie z linków. Dodatkowe można oznaczyć atrybutem data-toodip lub wywołać toodip('nazwa').">?</span></p><p class="qb">Kliknięcia, które prowadzą do wizyty albo kontaktu.</p></div></div>
         <div class="card"><div class="pb"><div id="conv"></div></div></div>
+        <div class="qhead"><span class="qstep">2</span><div><p class="qt">Dokąd ludzie dochodzą na stronie? <span class="hint" tabindex="0" data-tip="Dojście do sekcji strony (menu, dojazd, FAQ…). Jedno zdarzenie na sekcję na odsłonę. To zaangażowanie, nie konwersja, dlatego nie wlicza się do licznika konwersji.">?</span></p><p class="qb">Sekcje, do których ruch przewija. Nie liczą się jako konwersje.</p></div></div>
+        <div class="card"><div class="pb"><div id="engage"></div></div></div>
       </section>
 
       <!-- ===== BOTY AI ===== -->
@@ -718,7 +720,14 @@ async function loadStats(id) {
   renderVis(msRows, wq.data || {});
 
   var rows = all.filter(function (r) { return r.type !== 'event'; });
-  var events = all.filter(function (r) { return r.type === 'event'; });
+  /* Zdarzenia dziela sie na dwa rodzaje. Konwersja = klik, ktory prowadzi do
+     wizyty albo kontaktu (telefon, mapy, IG, FB, rezerwacja, CTA). Zaangazowanie
+     = dojscie do sekcji strony (nazwy "see_…"), liczone osobno, zeby nie
+     zawyzac konwersji: jedna osoba, ktora przewinie strone, generuje ich kilka. */
+  var allEvents = all.filter(function (r) { return r.type === 'event'; });
+  function isEngagement(n) { return /(^|_)(see|view|scroll|section)(_|$)/.test(String(n || '')); }
+  var events = allEvents.filter(function (r) { return !isEngagement(r.name); });
+  var engagements = allEvents.filter(function (r) { return isEngagement(r.name); });
 
   var ai30 = 0, uniq = {};
   var days = {}; for (var i = 13; i >= 0; i--) { days[new Date(Date.now() - i * 864e5).toISOString().slice(0, 10)] = { t: 0, a: 0 }; }
@@ -779,8 +788,26 @@ async function loadStats(id) {
 
   var convName = { phone: 'Telefon', directions: 'Mapy / dojazd', instagram: 'Instagram', facebook: 'Facebook',
     email: 'E-mail', whatsapp: 'WhatsApp', rezerwacja: 'Rezerwacja', menu: 'Menu' };
-  bars('conv', group(events, function (r) { return convName[r.name] || (r.name || 'zdarzenie'); }),
+  /* Nazwy z data-toodip na stronach klientow: czytelna etykieta zamiast kodu. */
+  function convLabel(n) {
+    if (convName[n]) return convName[n];
+    var s = String(n || 'zdarzenie').replace(/^main_/, '');
+    if (/google_maps/.test(s)) return 'Mapy / dojazd (Google)';
+    if (/apple_maps/.test(s)) return 'Mapy / dojazd (Apple)';
+    if (/dojazd/.test(s)) return 'Dojazd (przycisk)';
+    if (/^lang$/.test(s)) return 'Zmiana języka';
+    if (/_cta$/.test(s)) return s.replace(/_cta$/, '').replace(/_/g, ' ') + ' (CTA)';
+    return s.replace(/_/g, ' ');
+  }
+  bars('conv', group(events, function (r) { return convLabel(r.name); }),
     { empty: 'Brak jeszcze konwersji. Liczymy klik w telefon, mapy, IG i Facebooka.' });
+  var engEl = $('engage');
+  if (engEl) {
+    bars('engage', group(engagements, function (r) {
+      var s = String(r.name || '').replace(/^main_/, '').replace(/^see_/, '').replace(/_/g, ' ');
+      return s || 'sekcja';
+    }), { empty: 'Strona nie wysyła jeszcze zdarzeń sekcji. Opcjonalne: toodip(\'see_nazwa\') przy dojściu do sekcji.' });
+  }
 
   bars('pages', group(rows, function (r) { return r.path || '/'; }).slice(0, 8), { rest: true, empty: 'Brak danych. Wklej skrypt i wejdź na stronę.' });
 
