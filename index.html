@@ -69,6 +69,8 @@
   .sitechip{display:flex;flex-direction:column;gap:1px;background:var(--card);border:1px solid var(--border);border-radius:4px;padding:9px 11px;margin-bottom:8px}
   .sitechip .nm{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .sitechip .dm{font-size:11.5px;color:var(--muted-fg)}
+  .sitechip select{appearance:none;-webkit-appearance:none;width:100%;border:0;background:transparent;color:var(--fg);font:inherit;font-weight:600;font-size:13.5px;padding:0 18px 0 0;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 7px) 55%,calc(100% - 2px) 55%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+  .sitechip select:focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:2px}
   nav{display:flex;flex-direction:column;gap:2px;flex:1}
   .nav{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:4px;color:var(--fg);
     background:transparent;border:0;text-align:left;font-size:13.5px;font-weight:500;width:100%;transition:background .15s,color .15s}
@@ -202,7 +204,7 @@
 <div id="shell" class="shell hidden">
   <aside class="side">
     <div class="brand"><span class="dot" style="width:9px;height:9px;border-radius:3px;background:var(--brand)"></span>toodip<span style="color:var(--muted-fg);font-weight:500">stats</span></div>
-    <div class="sitechip" id="siteChip"><span class="nm" id="siteName">—</span><span class="dm" id="siteDomain"></span></div>
+    <div class="sitechip" id="siteChip"><span class="nm" id="siteName">—</span><select id="siteSel" aria-label="Wybierz stronę" hidden></select><span class="dm" id="siteDomain"></span></div>
     <nav id="nav">
       <button class="nav active" data-view="overview"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Przegląd</button>
       <button class="nav" data-view="visibility"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/></svg>Widoczność w AI</button>
@@ -406,7 +408,7 @@ $('logout').onclick = async function () { await sb.auth.signOut(); route(); };
 $('reload').onclick = function () { if (currentSite) loadStats(currentSite.id); };
 
 async function loadApp() {
-  var w = await sb.from('stats_websites').select('*').order('created_at').limit(1);
+  var w = await sb.from('stats_websites').select('*').order('created_at');
   var sites = w.data || [];
   if (!sites.length) {
     currentSite = null;
@@ -414,13 +416,29 @@ async function loadApp() {
     show('createCard', true); $('views').classList.add('hidden'); $('nav').style.visibility = 'hidden';
     return;
   }
-  currentSite = sites[0];
+  /* kilka stron na koncie: lista wyboru w miejscu nazwy, wybór pamiętany w przeglądarce */
+  var saved = null; try { saved = localStorage.getItem('toodip.site'); } catch (e) {}
+  currentSite = sites.filter(function (x) { return x.id === saved; })[0] || sites[0];
+  var sel = $('siteSel');
+  if (sites.length > 1) {
+    sel.innerHTML = sites.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>'; }).join('');
+    sel.value = currentSite.id; sel.hidden = false; $('siteName').hidden = true;
+    sel.onchange = function () {
+      currentSite = sites.filter(function (x) { return x.id === sel.value; })[0] || sites[0];
+      try { localStorage.setItem('toodip.site', currentSite.id); } catch (e) {}
+      showSite();
+    };
+  } else { sel.hidden = true; $('siteName').hidden = false; }
   show('createCard', false); $('views').classList.remove('hidden'); $('nav').style.visibility = 'visible';
+  var v = 'overview'; try { v = localStorage.getItem('toodip.view') || 'overview'; } catch (e) {}
+  setView(v);
+  showSite();
+}
+
+function showSite() {
   $('siteName').textContent = currentSite.name;
   $('siteDomain').textContent = currentSite.domain || '';
   $('snippet').textContent = '<script defer src="' + location.origin + '/s.js" data-id="' + currentSite.id + '"><\/script>';
-  var v = 'overview'; try { v = localStorage.getItem('toodip.view') || 'overview'; } catch (e) {}
-  setView(v);
   loadStats(currentSite.id);
 }
 
